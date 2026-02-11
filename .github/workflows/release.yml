@@ -12,6 +12,7 @@ jobs:
   release:
     name: Publish to npm
     runs-on: ubuntu-latest
+    environment: npm
     steps:
       - uses: actions/checkout@v6
         with:
@@ -76,7 +77,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          registry-url: "https://registry.npmjs.org"
 
       - name: Publish with provenance
         working-directory: cli
