@@ -16,7 +16,6 @@
     "format:check": "oxfmt --check",
     "typecheck": "tsgo --noEmit -p cli/tsconfig.json",
     "test:node": "vitest run",
-    "test:e2e": "bun run test/e2e.ts",
     "test:e2e:pw": "bun run build && playwright test",
     "test:e2e:install": "npx @puppeteer/browsers install chrome@canary --path .chrome-for-testing",
     "clean": "rm -rf cli/dist",
