@@ -3,8 +3,12 @@
   "name": "WebMCP Bridge",
   "description": "Bridges WebMCP browser tools to MCP clients",
   "version": "0.1.0",
-  "permissions": ["activeTab", "tabs", "alarms", "storage"],
-  "host_permissions": ["http://127.0.0.1/*"],
+  "permissions": ["activeTab", "tabs", "alarms", "storage", "scripting"],
+  "host_permissions": [
+    "http://127.0.0.1/*",
+    "https://api.github.com/*",
+    "https://raw.githubusercontent.com/*"
+  ],
   "background": {
     "service_worker": "background.js"
   },

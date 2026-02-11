@@ -102,3 +102,59 @@ h2 {
   padding: 16px 0;
   font-size: 12px;
 }
+
+.footer {
+  border-top: 1px solid #eee;
+  padding-top: 8px;
+  margin-top: 8px;
+  text-align: center;
+}
+
+.footer a {
+  color: #3b82f6;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}
+
+/* --- Dark mode --- */
+
+@media (prefers-color-scheme: dark) {
+  body {
+    color: #e0e0e0;
+    background: #1e1e1e;
+  }
+  h2 {
+    color: #999;
+  }
+
+  .status.connected {
+    background: #052e16;
+    color: #4ade80;
+  }
+  .status.disconnected {
+    background: #2a0a0a;
+    color: #fca5a5;
+  }
+
+  #tabs-list li {
+    background: #2a2a2a;
+  }
+  .tab-tools {
+    color: #999;
+  }
+  .empty {
+    color: #666;
+  }
+
+  .footer {
+    border-top-color: #333;
+  }
+  .footer a {
+    color: #60a5fa;
+  }
+}

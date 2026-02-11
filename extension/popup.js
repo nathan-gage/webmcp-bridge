@@ -47,3 +47,9 @@ port.onMessage.addListener((msg) => {
 });
 
 port.postMessage({ type: "get-status" });
+
+document.getElementById("manage-scripts").addEventListener("click", (e) => {
+  e.preventDefault();
+  chrome.tabs.create({ url: chrome.runtime.getURL("pages/plugins.html") });
+  window.close();
+});
