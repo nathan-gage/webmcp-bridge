@@ -115,10 +115,10 @@ describe("tool registration", () => {
 
   test("fires onToolsChanged callback", async () => {
     const ws = await connectExtension();
-    let changedTools: unknown[] = [];
+    let changeCount = 0;
 
-    server.onToolsChanged((tools) => {
-      changedTools = tools;
+    server.onToolsChanged(() => {
+      changeCount++;
     });
 
     const msg: RegisterToolsMessage = {
@@ -134,7 +134,22 @@ describe("tool registration", () => {
     ws.send(JSON.stringify(msg));
     await new Promise((r) => setTimeout(r, 50));
 
-    expect(changedTools).toHaveLength(1);
+    expect(changeCount).toBe(1);
+    ws.close();
+  });
+
+  test("fires onToolsChanged on tools_changed hint too", async () => {
+    const ws = await connectExtension();
+    let changeCount = 0;
+
+    server.onToolsChanged(() => {
+      changeCount++;
+    });
+
+    ws.send(JSON.stringify({ type: "tools_changed" }));
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(changeCount).toBe(1);
     ws.close();
   });
 });
@@ -155,20 +170,6 @@ describe("tool execution", () => {
         ws.send(JSON.stringify(result));
       }
     });
-
-    // Register a tool first
-    const regMsg: RegisterToolsMessage = {
-      type: "register_tools",
-      tools: [
-        {
-          name: "test_tool",
-          description: "A test tool",
-          inputSchema: { type: "object" },
-        },
-      ],
-    };
-    ws.send(JSON.stringify(regMsg));
-    await new Promise((r) => setTimeout(r, 50));
 
     const result = await server.executeTool("test_tool", { query: "hello" });
     expect(result.callId).toBeDefined();
@@ -198,20 +199,22 @@ describe("tool execution", () => {
     ws.close();
   });
 
-  test("rejects when no extension connected", async () => {
-    expect(server.isExtensionConnected()).toBe(false);
-    await expect(server.executeTool("test", {})).rejects.toThrow("No extension connected");
-  });
+  test(
+    "rejects when no extension connected (after wait timeout)",
+    async () => {
+      expect(server.isExtensionConnected()).toBe(false);
+      // executeTool now waits up to 5s for reconnection before failing
+      const start = Date.now();
+      await expect(server.executeTool("test", {})).rejects.toThrow("No extension connected");
+      expect(Date.now() - start).toBeGreaterThanOrEqual(4000);
+    },
+    { timeout: 10_000 },
+  );
 
-  test("times out after 30s", async () => {
+  test("times out after 30s (disconnect triggers rejection)", async () => {
     const ws = await connectExtension();
     // Extension does NOT reply - will timeout
 
-    // Use a shorter timeout by overriding the constant for this test
-    // Instead, we'll test the behavior by immediately closing the connection
-    // to get a quicker failure. The real timeout is tested conceptually.
-
-    // For a real timeout test, we'd mock timers, but let's test disconnect instead
     const promise = server.executeTool("slow_tool", {});
 
     // Close the extension to trigger rejection
@@ -221,8 +224,33 @@ describe("tool execution", () => {
   });
 });
 
+describe("waitForConnection", () => {
+  test("resolves true immediately if already connected", async () => {
+    const ws = await connectExtension();
+    const result = await server.waitForConnection(1000);
+    expect(result).toBe(true);
+    ws.close();
+  });
+
+  test("resolves false after timeout if no connection", async () => {
+    const start = Date.now();
+    const result = await server.waitForConnection(500);
+    expect(result).toBe(false);
+    expect(Date.now() - start).toBeGreaterThanOrEqual(400);
+  });
+
+  test("resolves true when connection arrives during wait", async () => {
+    // Start waiting, then connect after 200ms
+    const waitPromise = server.waitForConnection(2000);
+    setTimeout(() => connectExtension(), 300);
+
+    const result = await waitPromise;
+    expect(result).toBe(true);
+  });
+});
+
 describe("disconnect handling", () => {
-  test("clears tools on disconnect", async () => {
+  test("preserves tools after disconnect", async () => {
     const ws = await connectExtension();
 
     const msg: RegisterToolsMessage = {
@@ -236,16 +264,17 @@ describe("disconnect handling", () => {
     ws.close();
     await new Promise((r) => setTimeout(r, 50));
 
-    expect(server.getTools()).toHaveLength(0);
+    // Tools preserved — stale cache until extension reconnects with fresh data
+    expect(server.getTools()).toHaveLength(1);
     expect(server.isExtensionConnected()).toBe(false);
   });
 
-  test("fires toolsChanged with empty array on disconnect", async () => {
+  test("does not fire toolsChanged on disconnect", async () => {
     const ws = await connectExtension();
-    let lastTools: unknown[] | null = null;
+    let changeCount = 0;
 
-    server.onToolsChanged((tools) => {
-      lastTools = tools;
+    server.onToolsChanged(() => {
+      changeCount++;
     });
 
     // Register tools first
@@ -256,12 +285,13 @@ describe("disconnect handling", () => {
       }),
     );
     await new Promise((r) => setTimeout(r, 50));
-    expect(lastTools).toHaveLength(1);
+    expect(changeCount).toBe(1);
 
     ws.close();
     await new Promise((r) => setTimeout(r, 50));
 
-    expect(lastTools).toHaveLength(0);
+    // No additional toolsChanged — tool list hasn't changed, just connectivity
+    expect(changeCount).toBe(1);
   });
 
   test("replaces previous connection", async () => {

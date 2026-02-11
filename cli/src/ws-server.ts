@@ -2,23 +2,30 @@
  * WebSocket server for the CLI bridge.
  * Accepts connections from the Chrome extension, routes messages,
  * and manages tool registration and execution.
+ *
+ * Hybrid model: Extension pushes register_tools for instant caching.
+ * CLI also supports get_tools/tools_list for on-demand queries.
+ * getTools() returns from cache — no round-trip needed.
  */
 
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { randomUUID } from "node:crypto";
 import { WebSocketServer, type WebSocket } from "ws";
 import type { ToolSchema, ExecuteToolMessage, WireMessage, ToolResultMessage } from "./protocol.js";
-import { isRegisterTools, isToolResult } from "./protocol.js";
+import { isRegisterTools, isToolsChanged, isToolsList, isToolResult } from "./protocol.js";
 import { generateToken, validateOrigin } from "./security.js";
 
 const TOOL_CALL_TIMEOUT_MS = 30_000;
+const WAIT_FOR_CONNECTION_POLL_MS = 200;
 const PORT_RANGE_START = 13100;
 const PORT_RANGE_END = 13199;
+const WS_PING_INTERVAL_MS = 20_000;
 
 interface PendingCall {
   resolve: (result: ToolResultMessage) => void;
   reject: (error: Error) => void;
   timer: ReturnType<typeof setTimeout>;
+  toolName: string;
 }
 
 export interface WsServerOptions {
@@ -33,14 +40,16 @@ export interface WsServer {
   port: number;
   /** The authentication token */
   token: string;
-  /** Currently registered tools from the extension */
+  /** Get cached tools from the extension (instant, no round-trip) */
   getTools(): ToolSchema[];
   /** Whether an extension client is connected */
   isExtensionConnected(): boolean;
   /** Execute a tool on the extension, returns the result */
   executeTool(name: string, args: Record<string, unknown>): Promise<ToolResultMessage>;
   /** Register a callback for when the tool list changes */
-  onToolsChanged(cb: (tools: ToolSchema[]) => void): void;
+  onToolsChanged(cb: () => void): void;
+  /** Wait for extension to connect, polling every 200ms up to timeoutMs */
+  waitForConnection(timeoutMs: number): Promise<boolean>;
   /** Gracefully shut down the server */
   close(): Promise<void>;
 }
@@ -50,7 +59,7 @@ export async function createWsServer(options: WsServerOptions = {}): Promise<WsS
   let tools: ToolSchema[] = [];
   let extensionWs: WebSocket | null = null;
   const pendingCalls = new Map<string, PendingCall>();
-  const toolsChangedCallbacks: Array<(tools: ToolSchema[]) => void> = [];
+  const toolsChangedCallbacks: Array<() => void> = [];
 
   // HTTP server for bootstrap endpoint + WebSocket upgrade
   const httpServer = createServer((req: IncomingMessage, res: ServerResponse) => {
@@ -107,13 +116,34 @@ export async function createWsServer(options: WsServerOptions = {}): Promise<WsS
     });
   });
 
+  let pingInterval: ReturnType<typeof setInterval> | null = null;
+
   wss.on("connection", (ws: WebSocket) => {
     // Only allow one extension connection at a time
     if (extensionWs) {
+      process.stderr.write("[webmcp] Extension replaced by new connection\n");
       extensionWs.close(1000, "replaced");
       clearPendingCalls("extension replaced");
     }
+    if (pingInterval) clearInterval(pingInterval);
     extensionWs = ws;
+    process.stderr.write("[webmcp] Extension connected\n");
+
+    // Server-side ping to keep the connection alive and detect dead sockets.
+    // The browser auto-responds with pong frames at the WebSocket protocol level.
+    let alive = true;
+    ws.on("pong", () => {
+      alive = true;
+    });
+    pingInterval = setInterval(() => {
+      if (!alive) {
+        process.stderr.write("[webmcp] Extension ping timeout — terminating\n");
+        ws.terminate();
+        return;
+      }
+      alive = false;
+      ws.ping();
+    }, WS_PING_INTERVAL_MS);
 
     ws.on("message", (data) => {
       let msg: WireMessage;
@@ -124,10 +154,36 @@ export async function createWsServer(options: WsServerOptions = {}): Promise<WsS
       }
 
       if (isRegisterTools(msg)) {
+        // Push: extension sends full tool list — cache it
         tools = msg.tools;
-        for (const cb of toolsChangedCallbacks) {
-          cb(tools);
+
+        // Reject pending calls for tools that no longer exist (e.g. page navigated)
+        const newToolNames = new Set(tools.map((t) => t.name));
+        for (const [id, pending] of pendingCalls) {
+          if (!newToolNames.has(pending.toolName)) {
+            clearTimeout(pending.timer);
+            pending.reject(
+              new Error(`Tool "${pending.toolName}" removed during call (page navigated)`),
+            );
+            pendingCalls.delete(id);
+          }
         }
+
+        process.stderr.write(
+          `[webmcp] Tools registered: ${tools.length} tool(s)${tools.length > 0 ? ` [${tools.map((t) => t.name).join(", ")}]` : ""}\n`,
+        );
+        for (const cb of toolsChangedCallbacks) {
+          cb();
+        }
+      } else if (isToolsChanged(msg)) {
+        // Hint-only: tools may have changed but no payload — just notify
+        process.stderr.write("[webmcp] Tools changed hint received\n");
+        for (const cb of toolsChangedCallbacks) {
+          cb();
+        }
+      } else if (isToolsList(msg)) {
+        // Response to a get_tools request (unused in normal flow, but supported)
+        process.stderr.write(`[webmcp] tools_list response: ${msg.tools.length} tool(s)\n`);
       } else if (isToolResult(msg)) {
         const pending = pendingCalls.get(msg.callId);
         if (pending) {
@@ -140,12 +196,17 @@ export async function createWsServer(options: WsServerOptions = {}): Promise<WsS
 
     ws.on("close", () => {
       if (extensionWs === ws) {
+        process.stderr.write("[webmcp] Extension disconnected\n");
         extensionWs = null;
-        tools = [];
-        clearPendingCalls("extension disconnected");
-        for (const cb of toolsChangedCallbacks) {
-          cb(tools);
+        if (pingInterval) {
+          clearInterval(pingInterval);
+          pingInterval = null;
         }
+        clearPendingCalls("extension disconnected");
+        // Keep tools cached — don't clear on disconnect.
+        // The extension will re-push fresh tools when it reconnects.
+        // This prevents tool list from flickering during brief disconnects
+        // (service worker suspension, navigation, CLI restart, etc.)
       }
     });
 
@@ -162,7 +223,18 @@ export async function createWsServer(options: WsServerOptions = {}): Promise<WsS
     }
   }
 
-  function executeTool(name: string, args: Record<string, unknown>): Promise<ToolResultMessage> {
+  async function executeTool(
+    name: string,
+    args: Record<string, unknown>,
+  ): Promise<ToolResultMessage> {
+    // If not connected, wait briefly for reconnection (tolerates transient disconnects during navigation)
+    if (!extensionWs || extensionWs.readyState !== extensionWs.OPEN) {
+      const reconnected = await waitForConnection(5000);
+      if (!reconnected) {
+        throw new Error("No extension connected");
+      }
+    }
+
     return new Promise((resolve, reject) => {
       if (!extensionWs || extensionWs.readyState !== extensionWs.OPEN) {
         reject(new Error("No extension connected"));
@@ -175,7 +247,7 @@ export async function createWsServer(options: WsServerOptions = {}): Promise<WsS
         reject(new Error(`Tool call "${name}" timed out after ${TOOL_CALL_TIMEOUT_MS}ms`));
       }, TOOL_CALL_TIMEOUT_MS);
 
-      pendingCalls.set(callId, { resolve, reject, timer });
+      pendingCalls.set(callId, { resolve, reject, timer, toolName: name });
 
       const msg: ExecuteToolMessage = {
         type: "execute_tool",
@@ -185,6 +257,25 @@ export async function createWsServer(options: WsServerOptions = {}): Promise<WsS
       };
 
       extensionWs.send(JSON.stringify(msg));
+    });
+  }
+
+  function waitForConnection(timeoutMs: number): Promise<boolean> {
+    if (extensionWs && extensionWs.readyState === extensionWs.OPEN) {
+      return Promise.resolve(true);
+    }
+
+    return new Promise((resolve) => {
+      const deadline = Date.now() + timeoutMs;
+      const interval = setInterval(() => {
+        if (extensionWs && extensionWs.readyState === extensionWs.OPEN) {
+          clearInterval(interval);
+          resolve(true);
+        } else if (Date.now() >= deadline) {
+          clearInterval(interval);
+          resolve(false);
+        }
+      }, WAIT_FOR_CONNECTION_POLL_MS);
     });
   }
 
@@ -236,8 +327,13 @@ export async function createWsServer(options: WsServerOptions = {}): Promise<WsS
     onToolsChanged: (cb) => {
       toolsChangedCallbacks.push(cb);
     },
+    waitForConnection,
     close: () =>
       new Promise<void>((resolve) => {
+        if (pingInterval) {
+          clearInterval(pingInterval);
+          pingInterval = null;
+        }
         clearPendingCalls("server shutting down");
         // Force close all WebSocket connections first
         for (const client of wss.clients) {

@@ -10,7 +10,25 @@ export interface ToolSchema {
   inputSchema: Record<string, unknown>;
 }
 
-/** Extension → CLI: register available tools */
+/** Extension → CLI: lightweight hint that tool list changed (no payload) */
+export interface ToolsChangedMessage {
+  type: "tools_changed";
+}
+
+/** CLI → Extension: request current tool list */
+export interface GetToolsMessage {
+  type: "get_tools";
+  requestId: string;
+}
+
+/** Extension → CLI: response with current tool list */
+export interface ToolsListMessage {
+  type: "tools_list";
+  requestId: string;
+  tools: ToolSchema[];
+}
+
+/** Extension → CLI: register available tools (legacy, kept for backward compat) */
 export interface RegisterToolsMessage {
   type: "register_tools";
   tools: ToolSchema[];
@@ -34,9 +52,33 @@ export interface ToolResultMessage {
 }
 
 /** Discriminated union of all wire messages */
-export type WireMessage = RegisterToolsMessage | ExecuteToolMessage | ToolResultMessage;
+export type WireMessage =
+  | ToolsChangedMessage
+  | GetToolsMessage
+  | ToolsListMessage
+  | RegisterToolsMessage
+  | ExecuteToolMessage
+  | ToolResultMessage;
 
-/** Type guard for RegisterToolsMessage */
+/** Type guard for ToolsChangedMessage */
+export function isToolsChanged(msg: unknown): msg is ToolsChangedMessage {
+  return (
+    typeof msg === "object" &&
+    msg !== null &&
+    (msg as Record<string, unknown>).type === "tools_changed"
+  );
+}
+
+/** Type guard for ToolsListMessage */
+export function isToolsList(msg: unknown): msg is ToolsListMessage {
+  return (
+    typeof msg === "object" &&
+    msg !== null &&
+    (msg as Record<string, unknown>).type === "tools_list"
+  );
+}
+
+/** Type guard for RegisterToolsMessage (legacy) */
 export function isRegisterTools(msg: unknown): msg is RegisterToolsMessage {
   return (
     typeof msg === "object" &&

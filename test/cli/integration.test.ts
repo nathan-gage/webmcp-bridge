@@ -243,7 +243,7 @@ describe("full flow: extension registration → tool call → result", () => {
 
     await expect(promise).rejects.toThrow("extension disconnected");
     expect(server.isExtensionConnected()).toBe(false);
-    expect(server.getTools()).toHaveLength(0);
+    // Tools preserved in cache even after disconnect
   });
 
   test("new extension replaces old one cleanly", async () => {
