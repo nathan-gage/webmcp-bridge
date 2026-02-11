@@ -6,7 +6,8 @@
  * and a built CLI (run: npm run build).
  */
 
-import { test, expect, waitForTools, waitForTool } from "./fixtures.js";
+import { test, expect } from "./fixtures.js";
+import { waitForTools, waitForTool } from "./helpers.js";
 
 test("extension connects to CLI and page tools appear in MCP tools/list", async ({
   mcpClient,

@@ -16,6 +16,7 @@ import { isRegisterTools, isToolsChanged, isToolsList, isToolResult } from "./pr
 import { generateToken, validateOrigin } from "./security.js";
 
 const TOOL_CALL_TIMEOUT_MS = 30_000;
+const NAVIGATION_GRACE_MS = 5_000;
 const WAIT_FOR_CONNECTION_POLL_MS = 200;
 const PORT_RANGE_START = 13100;
 const PORT_RANGE_END = 13199;
@@ -157,15 +158,21 @@ export async function createWsServer(options: WsServerOptions = {}): Promise<WsS
         // Push: extension sends full tool list — cache it
         tools = msg.tools;
 
-        // Reject pending calls for tools that no longer exist (e.g. page navigated)
+        // Grace period for pending calls whose tool disappeared (e.g. SPA navigation).
+        // The tool result may still arrive after re-registration, so give it a few
+        // seconds instead of rejecting immediately.
         const newToolNames = new Set(tools.map((t) => t.name));
         for (const [id, pending] of pendingCalls) {
           if (!newToolNames.has(pending.toolName)) {
             clearTimeout(pending.timer);
-            pending.reject(
-              new Error(`Tool "${pending.toolName}" removed during call (page navigated)`),
-            );
-            pendingCalls.delete(id);
+            pending.timer = setTimeout(() => {
+              pendingCalls.delete(id);
+              pending.reject(
+                new Error(
+                  `Tool "${pending.toolName}" result not received after navigation (${NAVIGATION_GRACE_MS}ms)`,
+                ),
+              );
+            }, NAVIGATION_GRACE_MS);
           }
         }
 
