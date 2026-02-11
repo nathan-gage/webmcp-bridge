@@ -31,3 +31,5 @@ token
 # Playwright
 test-results/
 playwright-report/
+
+.worktrees/

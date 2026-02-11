@@ -157,17 +157,10 @@ export async function createWsServer(options: WsServerOptions = {}): Promise<WsS
         // Push: extension sends full tool list — cache it
         tools = msg.tools;
 
-        // Reject pending calls for tools that no longer exist (e.g. page navigated)
-        const newToolNames = new Set(tools.map((t) => t.name));
-        for (const [id, pending] of pendingCalls) {
-          if (!newToolNames.has(pending.toolName)) {
-            clearTimeout(pending.timer);
-            pending.reject(
-              new Error(`Tool "${pending.toolName}" removed during call (page navigated)`),
-            );
-            pendingCalls.delete(id);
-          }
-        }
+        // Don't reject pending calls when tools change — the result may still
+        // arrive (e.g. SPA navigation re-registers tools while an async execute
+        // callback is still in flight). The existing 30s timeout handles the
+        // failure case if the result truly never comes.
 
         process.stderr.write(
           `[webmcp] Tools registered: ${tools.length} tool(s)${tools.length > 0 ? ` [${tools.map((t) => t.name).join(", ")}]` : ""}\n`,

@@ -2,6 +2,14 @@
 
 Bridges Chrome's `navigator.modelContext` (WebMCP spec, Chrome 146+) to the MCP protocol over stdio, so any MCP client can use tools from any WebMCP-enabled website.
 
+## Philosophy
+
+This codebase will outlive you. Every shortcut becomes someone else's burden. Every hack compounds into technical debt that slows the whole team down.
+
+You are not just writing code. You are shaping the future of this project. The patterns you establish will be copied. The corners you cut will be cut again.
+
+Fight entropy. Leave the codebase better than you found it.
+
 ## Architecture
 
 ```
@@ -14,11 +22,11 @@ Two components: a **CLI bridge** (TypeScript, runs as MCP server) and a **Chrome
 
 ```bash
 bun install                  # Install dependencies
-bun test                     # Run unit tests (62 tests across 5 files)
-bun run test:e2e             # E2E: spawns CLI, waits for extension, calls a tool
+bun test                     # Run unit tests
+bun run test:e2e:pw          # Playwright E2E (needs Chrome Canary, see below)
 bun run dev                  # Start CLI in dev mode
 bun run build                # Build CLI for npm distribution
-bun run lint                 # TypeScript typecheck
+bun run lint                 # Lint (oxlint)
 ```
 
 ## CLI (`cli/src/`)
@@ -88,13 +96,21 @@ CLI → Extension:
 
 ## Tests (`test/`)
 
-| File                                  | Count | Tests                                                                         |
-| ------------------------------------- | ----- | ----------------------------------------------------------------------------- |
-| `test/cli/security.test.ts`           | 15    | Token gen, file perms, origin validation                                      |
-| `test/cli/ws-server.test.ts`          | 19    | Connection auth, bootstrap endpoint, tool registration, execution, disconnect |
-| `test/cli/mcp-server.test.ts`         | 7     | Tool sync, execution forwarding, status tool                                  |
-| `test/cli/integration.test.ts`        | 7     | Full stdio→WS→mock-extension flow                                             |
-| `test/extension/content-main.test.ts` | 14    | modelContext interception, nonce validation, tool execution                   |
+- **Unit tests** (`bun test`): `test/cli/` and `test/extension/` — run via bun's built-in test runner
+- **Playwright E2E** (`bun run test:e2e:pw`): `test/e2e/` — full pipeline through real Chrome with the extension loaded
+
+### Playwright E2E setup
+
+Requires Chrome for Testing Canary (146+) with WebMCP support:
+
+```bash
+bun run test:e2e:install     # One-time: download Chrome Canary to .chrome-for-testing/
+bun run test:e2e:pw          # Build CLI + run Playwright (headed, sequential)
+```
+
+### Key gotcha: Playwright fixture files
+
+Helper functions must be in `test/e2e/helpers.ts`, **not** in `test/e2e/fixtures.ts`. Playwright 1.58+ statically analyzes all functions in fixture files and rejects any whose first parameter isn't a destructured fixture object. Keep non-fixture helpers separate.
 
 ## Development Tips
 
