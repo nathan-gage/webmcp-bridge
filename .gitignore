@@ -24,3 +24,10 @@ Thumbs.db
 # WebMCP runtime files (written to ~/.webmcp/)
 port
 token
+
+# Chrome for Testing (downloaded by test:e2e:install)
+.chrome-for-testing/
+
+# Playwright
+test-results/
+playwright-report/
