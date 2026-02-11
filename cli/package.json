@@ -1,6 +1,6 @@
 {
   "name": "webmcp-bridge",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Bridge WebMCP browser tools to MCP clients",
   "bin": {
     "webmcp-bridge": "./dist/index.js"
