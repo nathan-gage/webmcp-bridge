@@ -36,17 +36,17 @@ self.agent.provideContext({
         type: "object",
         properties: {
           itemId: { type: "string", description: "Product ID" },
-          quantity: { type: "number", description: "Number of items" }
+          quantity: { type: "number", description: "Number of items" },
         },
-        required: ["itemId"]
+        required: ["itemId"],
       },
       async execute(params, clientInfo) {
         const cart = carts.get(clientInfo.sessionId);
         cart.add(params.itemId, params.quantity || 1);
         return { content: [{ type: "text", text: "Item added to cart." }] };
-      }
-    }
-  ]
+      },
+    },
+  ],
 });
 ```
 
@@ -76,6 +76,7 @@ Service workers must be installed before their tools are available. Installation
 happens when a user first navigates to the site. Future mechanisms include:
 
 **JIT installation via manifest** (proposed):
+
 ```json
 {
   "name": "Example App",
@@ -99,11 +100,11 @@ Agent can now call tools.
 
 When both a page and its service worker register tools, routing depends on the agent:
 
-| Scenario | Routing |
-|---|---|
-| Single tab with tools | All tool calls go to the page |
-| Service worker only | All tool calls go to the service worker |
-| Tab + service worker | Agent decides (may ask user, use context, or prefer the open tab) |
+| Scenario              | Routing                                                           |
+| --------------------- | ----------------------------------------------------------------- |
+| Single tab with tools | All tool calls go to the page                                     |
+| Service worker only   | All tool calls go to the service worker                           |
+| Tab + service worker  | Agent decides (may ask user, use context, or prefer the open tab) |
 
 A single tool call never routes to more than one server, even if multiple servers have tools
 with the same name.

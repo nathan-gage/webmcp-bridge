@@ -25,12 +25,12 @@ No JavaScript required for basic form-to-tool conversion.
 
 ### Form Attributes
 
-| Attribute | Element | Purpose |
-|---|---|---|
-| `toolname` | `<form>` | Tool name (required) |
-| `tooldescription` | `<form>` | Natural language description (required) |
-| `toolautosubmit` | `<form>` | Auto-submit without user clicking Submit |
-| `toolparamtitle` | form field | Override JSON Schema property key (defaults to `name` attribute) |
+| Attribute              | Element    | Purpose                                                                |
+| ---------------------- | ---------- | ---------------------------------------------------------------------- |
+| `toolname`             | `<form>`   | Tool name (required)                                                   |
+| `tooldescription`      | `<form>`   | Natural language description (required)                                |
+| `toolautosubmit`       | `<form>`   | Auto-submit without user clicking Submit                               |
+| `toolparamtitle`       | form field | Override JSON Schema property key (defaults to `name` attribute)       |
 | `toolparamdescription` | form field | Override parameter description (defaults to associated `<label>` text) |
 
 ### Example
@@ -40,9 +40,12 @@ No JavaScript required for basic form-to-tool conversion.
   <label for="text">text label</label>
   <input type="text" name="text" />
 
-  <select name="select" required
+  <select
+    name="select"
+    required
     toolparamtitle="Possible Options"
-    toolparamdescription="A nice description">
+    toolparamdescription="A nice description"
+  >
     <option value="Option 1">This is option 1</option>
     <option value="Option 2">This is option 2</option>
     <option value="Option 3">This is option 3</option>
@@ -77,6 +80,7 @@ This generates the following tool schema internally:
 ### Behavior
 
 When an agent calls a declarative tool:
+
 1. Browser focuses the form
 2. Browser auto-populates fields with agent-provided values
 3. Without `toolautosubmit`: user must manually click Submit
@@ -132,7 +136,9 @@ navigator.modelContext.registerTool({
   annotations: {
     readOnlyHint: "true",
   },
-  execute: () => { /* ... */ },
+  execute: () => {
+    /* ... */
+  },
 });
 ```
 
@@ -202,11 +208,13 @@ Both deactivate on form submit, agent cancel, or form reset.
 ## Testing Extension
 
 Install the [Model Context Tool Inspector Extension](https://chromewebstore.google.com/detail/model-context-tool-inspec/gbpdfapgefenggkahomfgkhfehlcenpd) to:
+
 - List all registered tools (imperative and declarative)
 - Manually execute tools with custom parameters (bypasses LLM non-determinism)
 - Test with Gemini API integration (requires API key)
 
 Demo apps:
+
 - [Travel Demo (React, Imperative)](https://googlechromelabs.github.io/webmcp-tools/demos/react-flightsearch/)
 - [Le Petit Bistro (Declarative)](https://googlechromelabs.github.io/webmcp-tools/demos/french-bistro/)
 - [Source code](https://github.com/GoogleChromeLabs/webmcp-tools/tree/main/demos)

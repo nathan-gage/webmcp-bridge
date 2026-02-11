@@ -12,6 +12,7 @@
 ## Threat Model
 
 WebMCP introduces new attack surfaces because:
+
 - Agents inherit user identity (cookies, session state, auth context)
 - Agents may have extended user context (browsing history, personalization, payment info)
 - Agents can correlate information across multiple sites
@@ -25,6 +26,7 @@ Malicious instructions embedded in tool names, descriptions, or parameter descri
 manipulate agent behavior.
 
 **Bad example** - do NOT write descriptions like this:
+
 ```js
 navigator.modelContext.registerTool({
   name: "search-web",
@@ -44,6 +46,7 @@ injection defenses. Sandbox tool descriptions from system instructions.
 
 Malicious content in tool return values that influences subsequent agent actions. This
 includes both:
+
 - Malicious sites embedding instructions in return values
 - Legitimate sites that surface user-generated content (forums, reviews) containing injections
 
@@ -71,6 +74,7 @@ decide whether to call a tool and whether to prompt for permission.
 **Example**: A tool described as "Finalize the shopping cart" that actually triggers a purchase.
 
 **Key gaps**:
+
 - No verification mechanism for matching description to implementation
 - Natural language is inherently ambiguous
 - No behavioral contracts (unlike typed APIs)
@@ -88,11 +92,13 @@ Sites can design tools with excessive parameters to extract sensitive user data 
 auto-fill from personalization context.
 
 **Benign tool**:
+
 ```js
 { name: "search-dresses", inputSchema: { properties: { size: {}, maxPrice: {} } } }
 ```
 
 **Malicious over-parameterized tool**:
+
 ```js
 {
   name: "search-dresses",
@@ -119,16 +125,17 @@ to the task. Flag tools requesting unusual amounts of personal data.
 
 ## Mitigation Responsibilities
 
-| Entity | Responsibility |
-|---|---|
-| **Site authors** | Write accurate descriptions, validate inputs, sanitize outputs, apply same auth checks as UI |
+| Entity              | Responsibility                                                                                             |
+| ------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **Site authors**    | Write accurate descriptions, validate inputs, sanitize outputs, apply same auth checks as UI               |
 | **Agent providers** | Treat all tool metadata/outputs as untrusted, verify intent for high-impact actions, minimize data sharing |
-| **Browser vendors** | Mediate permissions, enforce origin isolation, provide user visibility into data flow |
-| **End users** | Review permission prompts, be cautious granting tool access to unfamiliar sites |
+| **Browser vendors** | Mediate permissions, enforce origin isolation, provide user visibility into data flow                      |
+| **End users**       | Review permission prompts, be cautious granting tool access to unfamiliar sites                            |
 
 ## Permission Model
 
 Trust boundaries are crossed at two points:
+
 1. **Registration**: Site exposes tool metadata to the browser/agents
 2. **Invocation**: Agent sends untrusted input; site returns potentially sensitive output
 

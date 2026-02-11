@@ -2,8 +2,8 @@
   "mcpServers": {
     "webmcp-bridge": {
       "type": "stdio",
-      "command": "bun",
-      "args": ["run", "cli/src/index.ts"],
+      "command": "node",
+      "args": ["cli/dist/index.js"],
       "env": {}
     }
   }

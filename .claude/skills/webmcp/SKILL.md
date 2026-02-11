@@ -43,7 +43,7 @@ Three registration methods:
 ```js
 // Replace all tools at once (useful for SPAs that change state)
 navigator.modelContext.provideContext({
-  tools: [{ name, description, inputSchema, execute }]
+  tools: [{ name, description, inputSchema, execute }],
 });
 
 // Add a single tool without clearing existing ones
@@ -97,6 +97,7 @@ execute({ name, description, year, imageUrl }, agent) {
 ```
 
 Key rules:
+
 - Tool calls run one at a time, sequentially, on the main thread
 - The function can be async and return a Promise
 - Delegate expensive work to dedicated/shared workers to keep UI responsive
@@ -149,17 +150,15 @@ Single-page apps should update tools when UI state changes:
 function onNavigateToEditor(document) {
   navigator.modelContext.provideContext({
     tools: [
-      { name: "edit-design", description: "Modify the current design", /* ... */ },
-      { name: "add-page", description: "Add a page to the document", /* ... */ }
-    ]
+      { name: "edit-design", description: "Modify the current design" /* ... */ },
+      { name: "add-page", description: "Add a page to the document" /* ... */ },
+    ],
   });
 }
 
 function onNavigateToTemplates() {
   navigator.modelContext.provideContext({
-    tools: [
-      { name: "filter-templates", description: "Filter templates by description", /* ... */ }
-    ]
+    tools: [{ name: "filter-templates", description: "Filter templates by description" /* ... */ }],
   });
 }
 ```
