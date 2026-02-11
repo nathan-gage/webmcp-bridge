@@ -27,6 +27,8 @@ bun run test:e2e:pw          # Playwright E2E (needs Chrome Canary, see below)
 bun run dev                  # Start CLI in dev mode
 bun run build                # Build CLI for npm distribution
 bun run lint                 # Lint (oxlint)
+bun run chrome               # Launch Chrome with extension (pinned to toolbar)
+bun run chrome:dev           # Launch Chrome + CLI in dev mode
 ```
 
 ## CLI (`cli/src/`)
@@ -46,13 +48,18 @@ bun run lint                 # Lint (oxlint)
 
 ## Extension (`extension/`)
 
-| File                  | World          | Purpose                                                                                                                           |
-| --------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `content-main.js`     | MAIN           | Wraps `ModelContext.prototype` methods to intercept tool registrations. Posts `tools-changed` / `tool-result` messages with nonce |
-| `content-isolated.js` | ISOLATED       | Generates nonce, relays messages between MAIN world (`window.postMessage`) and background (`chrome.runtime`)                      |
-| `background.js`       | Service Worker | WS client to CLI, tab tracking, tool aggregation, port discovery with exponential backoff, badge management                       |
-| `popup.html/js/css`   | —              | Status popup showing connection state and active tools                                                                            |
-| `manifest.json`       | —              | MV3 manifest. Content scripts run at `document_start` in both MAIN and ISOLATED worlds                                            |
+| File                      | World          | Purpose                                                                                                                           |
+| ------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `content-main.js`         | MAIN           | Wraps `ModelContext.prototype` methods to intercept tool registrations. Posts `tools-changed` / `tool-result` messages with nonce |
+| `content-isolated.js`     | ISOLATED       | Generates nonce, relays messages between MAIN world (`window.postMessage`) and background (`chrome.runtime`)                      |
+| `background.js`           | Service Worker | WS client to CLI, tab tracking, tool aggregation, port discovery with exponential backoff, badge management                       |
+| `popup.html/js/css`       | —              | Status popup showing connection state, active tools, and "Manage Plugins" link                                                    |
+| `pages/plugins.*`         | —              | Full-page plugin management UI (install from GitHub or local folder, enable/disable, uninstall)                                   |
+| `lib/github-fetcher.js`   | Service Worker | Parses `user/repo@ref` specifiers, fetches manifests + scripts via GitHub API                                                     |
+| `lib/script-validator.js` | Service Worker | Dangerous pattern scan, obfuscation detection                                                                                     |
+| `lib/script-injector.js`  | Service Worker | URL pattern matching, `tabs.onUpdated` listener, `chrome.scripting.executeScript` injection                                       |
+| `lib/package-manager.js`  | Service Worker | Install, uninstall, enable/disable, list packages. Orchestrates fetch → validate → store                                          |
+| `manifest.json`           | —              | MV3 manifest. Content scripts run at `document_start` in both MAIN and ISOLATED worlds                                            |
 
 ### Key gotcha: Prototype wrapping, not instance wrapping
 
@@ -111,6 +118,37 @@ bun run test:e2e:pw          # Build CLI + run Playwright (headed, sequential)
 ### Key gotcha: Playwright fixture files
 
 Helper functions must be in `test/e2e/helpers.ts`, **not** in `test/e2e/fixtures.ts`. Playwright 1.58+ statically analyzes all functions in fixture files and rejects any whose first parameter isn't a destructured fixture object. Keep non-fixture helpers separate.
+
+## Marketplace (`extension/lib/`, `extension/pages/`)
+
+The marketplace enables installing community-authored "bridge scripts" — Tampermonkey-style IIFEs that call `navigator.modelContext.registerTool()`. The existing prototype wrapping in `content-main.js` automatically intercepts these calls.
+
+### Package format
+
+A bridge script package is a GitHub repo (or local folder) with a `webmcp-bridge.json` manifest and script files. See `examples/marketplace/` for a working example.
+
+### Install paths
+
+- **GitHub**: Enter `user/repo@ref` in the plugins page (supports tags, branches, SHAs)
+- **Local folder**: Click "Load Folder" and select a directory containing `webmcp-bridge.json`
+
+### Script injection
+
+Scripts are injected via `chrome.scripting.executeScript({ world: 'MAIN' })` on `tabs.onUpdated`. Content scripts from manifest run at `document_start` before any `executeScript` calls, so prototype wrapping is always in place.
+
+### Key gotcha: Extension CSP blocks `new Function()` for validation
+
+The extension's Content Security Policy blocks `eval` and `new Function()`. Script validation cannot use `new Function(code)` for syntax checking — syntax errors surface at injection time instead. The validator only does pattern-based scanning (dangerous APIs, obfuscation heuristics).
+
+## Dev Browser (`scripts/chrome-dev.ts`)
+
+`bun run chrome` launches Chrome for Testing with:
+
+- The extension loaded from the current worktree and **pinned to the toolbar**
+- A fresh temporary profile (cleaned up on exit)
+- The `enable-webmcp-testing` experiment flag enabled
+- Works across worktrees (discovers Chrome for Testing in the main repo)
+- Override the binary with `CHROME_BIN=/path/to/chrome`
 
 ## Development Tips
 

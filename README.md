@@ -44,6 +44,17 @@ Add to your MCP client:
 
 Open a [WebMCP-enabled site](https://googlechromelabs.github.io/webmcp-tools/demos/react-flightsearch/). Extension badge goes green. Tools appear in your client.
 
+## Marketplace
+
+Install community bridge scripts to add WebMCP tools to any site — like Tampermonkey for MCP.
+
+```bash
+bun run chrome           # launch Chrome with extension pinned to toolbar
+bun run chrome:dev       # launch Chrome + CLI together
+```
+
+Open the extension popup and click **Manage Plugins** to install packages from GitHub (`user/repo@ref`) or load from a local folder. See `examples/marketplace/` for the package format.
+
 ## Development
 
 ```bash
@@ -54,6 +65,8 @@ bun run test:e2e:install # one-time: download Chrome for Testing Canary
 bun run dev              # dev mode
 bun run build            # build for npm
 bun run lint             # lint
+bun run chrome           # launch Chrome with extension (pinned to toolbar)
+bun run chrome:dev       # Chrome + CLI in dev mode
 ```
 
 ## Security

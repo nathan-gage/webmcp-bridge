@@ -10,7 +10,8 @@
  */
 
 import { spawn } from "node:child_process";
-import { readdirSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { readdirSync, writeFileSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
@@ -89,15 +90,42 @@ function findChrome(): string {
   );
 }
 
-const chromeBin = findChrome();
+/**
+ * Compute Chrome's extension ID for an unpacked extension path.
+ * Chrome hashes the lowercase path with SHA-256, takes the first 32 hex chars,
+ * and maps each hex digit (0-f) to a letter (a-p).
+ */
+function computeExtensionId(extensionPath: string): string {
+  const hash = createHash("sha256").update(extensionPath.toLowerCase()).digest("hex");
+  return hash
+    .slice(0, 32)
+    .split("")
+    .map((c) => String.fromCharCode("a".charCodeAt(0) + parseInt(c, 16)))
+    .join("");
+}
 
-// Create temp profile with WebMCP flag
+const chromeBin = findChrome();
+const extensionId = computeExtensionId(EXTENSION_PATH);
+
+// Create temp profile with WebMCP flag and pinned extension
 const userDataDir = mkdtempSync(resolve(tmpdir(), "webmcp-dev-"));
 writeFileSync(
   resolve(userDataDir, "Local State"),
   JSON.stringify({
     browser: {
       enabled_labs_experiments: ["enable-webmcp-testing@1"],
+    },
+  }),
+);
+
+// Write Default profile preferences to pin the extension to the toolbar
+const defaultProfileDir = resolve(userDataDir, "Default");
+mkdirSync(defaultProfileDir, { recursive: true });
+writeFileSync(
+  resolve(defaultProfileDir, "Preferences"),
+  JSON.stringify({
+    extensions: {
+      pinned_extensions: [extensionId],
     },
   }),
 );
