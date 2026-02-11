@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+  <head>
+    <title>loading</title>
+  </head>
+  <body>
+    <h1>WebMCP E2E Test Page</h1>
+    <script>
+      if (navigator.modelContext) {
+        navigator.modelContext.registerTool({
+          name: "e2e_echo",
+          description: "Echoes input back",
+          inputSchema: {
+            type: "object",
+            properties: { message: { type: "string" } },
+          },
+          execute: async (args) => ({ echo: args.message }),
+        });
+        document.title = "ready";
+      } else {
+        document.title = "no-webmcp";
+      }
+    </script>
+  </body>
+</html>

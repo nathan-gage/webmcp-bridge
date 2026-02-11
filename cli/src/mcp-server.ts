@@ -6,12 +6,15 @@
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { ListToolsRequestSchema, CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import type { WsServer } from "./ws-server.js";
 
+const DEBOUNCE_MS = 200;
+
 export interface McpBridgeServer {
-  /** Start the MCP server on stdio */
-  start(): Promise<void>;
+  /** Start the MCP server. Uses stdio by default, or a custom transport for testing. */
+  start(transport?: Transport): Promise<void>;
   /** Notify the MCP client that the tool list has changed */
   notifyToolsChanged(): void;
   /** Close the MCP server */
@@ -39,7 +42,7 @@ export function createMcpServer(wsServer: WsServer): McpBridgeServer {
       ...extensionTools.map((t) => ({
         name: t.name,
         description: t.description,
-        inputSchema: t.inputSchema ?? { type: "object" as const },
+        inputSchema: { type: "object" as const, ...t.inputSchema },
       })),
     ];
 
@@ -109,18 +112,27 @@ export function createMcpServer(wsServer: WsServer): McpBridgeServer {
     }
   });
 
+  let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+
   return {
-    async start() {
-      // Wire up tool change notifications
+    async start(customTransport?: Transport) {
+      // Wire up tool change notifications with debounce.
+      // During page navigation, the extension rapidly sends tool updates.
+      // Debouncing collapses these into a single notification.
       wsServer.onToolsChanged(() => {
-        try {
-          server.sendToolListChanged();
-        } catch {
-          // Ignore if transport is already disconnected (shutdown race)
-        }
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          // sendToolListChanged() is async — catch both sync throws and rejections
+          // to ignore "Not connected" errors during shutdown races
+          try {
+            server.sendToolListChanged().catch(() => {});
+          } catch {
+            // Ignore if transport is already disconnected
+          }
+        }, DEBOUNCE_MS);
       });
 
-      const transport = new StdioServerTransport();
+      const transport = customTransport ?? new StdioServerTransport();
       await server.connect(transport);
     },
 
@@ -129,6 +141,7 @@ export function createMcpServer(wsServer: WsServer): McpBridgeServer {
     },
 
     async close() {
+      clearTimeout(debounceTimer);
       await server.close();
     },
   };

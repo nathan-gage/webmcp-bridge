@@ -8,6 +8,25 @@ import { createWsServer } from "./ws-server.js";
 import { createMcpServer } from "./mcp-server.js";
 import { writePortFile, cleanupPortFile } from "./port-file.js";
 
+// Crash protection: don't let unhandled errors kill the process
+process.on("uncaughtException", (err) => {
+  process.stderr.write(`[webmcp] Uncaught exception: ${err.message}\n`);
+});
+
+process.on("unhandledRejection", (reason) => {
+  process.stderr.write(
+    `[webmcp] Unhandled rejection: ${reason instanceof Error ? reason.message : String(reason)}\n`,
+  );
+});
+
+// Handle broken stdio pipe (MCP client disconnected)
+process.stdout.on("error", (err: NodeJS.ErrnoException) => {
+  if (err.code === "EPIPE") {
+    process.stderr.write("[webmcp] Stdout pipe broken (MCP client disconnected)\n");
+    process.exit(0);
+  }
+});
+
 async function main() {
   // Start WebSocket server
   const wsServer = await createWsServer();

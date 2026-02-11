@@ -11,12 +11,12 @@ graph LR
 
 Websites already orchestrate APIs, manage auth, and handle complex workflows. A traditional MCP server rebuilds all of that from scratch. WebMCP skips it — the website registers tools client-side via `navigator.modelContext`, and agents call them through the browser. The tools run through the same code paths as the UI, authenticated by whatever the user already has.
 
-|  | Traditional MCP | WebMCP |
-|---|---|---|
-| Server | build and host | the website |
-| Auth | API keys, token refresh | browser sessions |
-| Business logic | reimplement | already in the UI |
-| Maintenance | track API changes | website handles it |
+|                | Traditional MCP         | WebMCP             |
+| -------------- | ----------------------- | ------------------ |
+| Server         | build and host          | the website        |
+| Auth           | API keys, token refresh | browser sessions   |
+| Business logic | reimplement             | already in the UI  |
+| Maintenance    | track API changes       | website handles it |
 
 ### What this extension adds
 

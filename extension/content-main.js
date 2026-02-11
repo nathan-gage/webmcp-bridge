@@ -1,8 +1,10 @@
 "use strict";
 
 (() => {
-  const NONCE = document.documentElement.dataset.webmcpNonce;
-  if (!NONCE) return;
+  // Generate nonce in MAIN world so prototype wrapping never depends on
+  // ISOLATED world having run first (no ordering guarantee between worlds).
+  const NONCE = crypto.randomUUID();
+  document.documentElement.dataset.webmcpNonce = NONCE;
 
   const toolMap = new Map(); // name → { serialized, execute }
 
@@ -26,6 +28,13 @@
     if (event.origin !== window.location.origin) return;
     if (!event.data || event.data.nonce !== NONCE) return;
     if (event.data.source !== "webmcp-isolated") return;
+
+    if (event.data.type === "re-poll-tools") {
+      if (toolMap.size > 0) {
+        broadcastToolsChanged();
+      }
+      return;
+    }
 
     if (event.data.type === "execute-tool") {
       const { callId, toolName, args } = event.data;
@@ -53,10 +62,15 @@
 
   // Wrap ModelContext.prototype immediately — no polling needed.
   // This runs at document_start before page JS, so we catch all registrations.
-  const MC = typeof ModelContext !== "undefined" ? ModelContext : null;
-  if (!MC) return;
+  // Try global constructor first, fall back to navigator.modelContext prototype.
+  let proto = null;
+  if (typeof ModelContext !== "undefined") {
+    proto = ModelContext.prototype;
+  } else if (navigator.modelContext) {
+    proto = Object.getPrototypeOf(navigator.modelContext);
+  }
+  if (!proto) return;
 
-  const proto = MC.prototype;
   const origRegister = proto.registerTool;
   const origUnregister = proto.unregisterTool;
   const origProvide = proto.provideContext;
