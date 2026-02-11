@@ -1,5 +1,18 @@
 "use strict";
 
+// --- Marketplace libs ---
+// Loaded via importScripts since MV3 service workers don't support ES modules
+try {
+  importScripts(
+    "lib/github-fetcher.js",
+    "lib/script-validator.js",
+    "lib/package-manager.js",
+    "lib/script-injector.js",
+  );
+} catch (e) {
+  console.error("Failed to load marketplace libs:", e);
+}
+
 const PORT_MIN = 13100;
 const PORT_MAX = 13199;
 const RECONNECT_BASE_MS = 1000;
@@ -327,6 +340,67 @@ function handleExecuteTool(msg) {
     });
 }
 
+// --- Marketplace message handling ---
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "marketplace:install") {
+    handleMarketplaceInstall(message, sendResponse);
+    return true; // async response
+  }
+  if (message.type === "marketplace:uninstall") {
+    handleMarketplaceUninstall(message, sendResponse);
+    return true;
+  }
+  if (message.type === "marketplace:toggle") {
+    handleMarketplaceToggle(message, sendResponse);
+    return true;
+  }
+  if (message.type === "marketplace:list") {
+    handleMarketplaceList(sendResponse);
+    return true;
+  }
+});
+
+async function handleMarketplaceInstall(message, sendResponse) {
+  try {
+    const { packageManager } = globalThis.__webmcpExports;
+    const result = await packageManager.installPackage(message.specifier);
+    sendResponse({ success: true, key: result.key, warnings: result.warnings });
+  } catch (e) {
+    sendResponse({ success: false, error: e.message });
+  }
+}
+
+async function handleMarketplaceUninstall(message, sendResponse) {
+  try {
+    const { packageManager } = globalThis.__webmcpExports;
+    await packageManager.uninstallPackage(message.key);
+    sendResponse({ success: true });
+  } catch (e) {
+    sendResponse({ success: false, error: e.message });
+  }
+}
+
+async function handleMarketplaceToggle(message, sendResponse) {
+  try {
+    const { packageManager } = globalThis.__webmcpExports;
+    await packageManager.togglePackage(message.key, message.enabled);
+    sendResponse({ success: true });
+  } catch (e) {
+    sendResponse({ success: false, error: e.message });
+  }
+}
+
+async function handleMarketplaceList(sendResponse) {
+  try {
+    const { packageManager } = globalThis.__webmcpExports;
+    const packages = await packageManager.listPackages();
+    sendResponse({ success: true, packages });
+  } catch (e) {
+    sendResponse({ success: false, error: e.message });
+  }
+}
+
 // --- Content script message handling ---
 
 chrome.runtime.onMessage.addListener((message, sender) => {
@@ -380,16 +454,21 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   }
 });
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === "loading" && tabs.has(tabId)) {
     // Don't cancel pending calls — the tool result may still arrive after
     // SPA navigation. The CLI applies a grace period timeout instead.
 
     // Page is navigating; clear tools until new ones are registered
-    const tab = tabs.get(tabId);
-    tab.tools = [];
+    const tabState = tabs.get(tabId);
+    tabState.tools = [];
     saveCachedTabs();
     sendToolsToServer();
+  }
+
+  // Inject matching marketplace scripts
+  if (globalThis.__webmcpExports && globalThis.__webmcpExports.scriptInjector) {
+    globalThis.__webmcpExports.scriptInjector.onTabUpdated(tabId, changeInfo, tab).catch(() => {});
   }
 });
 

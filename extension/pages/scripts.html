@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebMCP Bridge — Manage Scripts</title>
+    <link rel="stylesheet" href="scripts.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>WebMCP Bridge Scripts</h1>
+        <p class="subtitle">Install and manage community bridge scripts</p>
+      </header>
+
+      <section class="install-section">
+        <h2>Install Package</h2>
+        <form id="install-form">
+          <div class="input-row">
+            <input
+              type="text"
+              id="specifier-input"
+              placeholder="owner/repo or owner/repo@v1.0.0"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button type="submit" id="install-btn">Install</button>
+          </div>
+          <div id="install-status" class="install-status" hidden></div>
+        </form>
+      </section>
+
+      <section class="packages-section">
+        <h2>Installed Packages</h2>
+        <div id="packages-list"></div>
+        <div id="no-packages" class="empty">No packages installed</div>
+      </section>
+
+      <section class="registry-section">
+        <h2>Browse Registry</h2>
+        <div class="registry-placeholder">
+          <p>Curated registry coming soon.</p>
+          <p class="hint">For now, install packages directly using <code>owner/repo@ref</code> above.</p>
+        </div>
+      </section>
+    </div>
+    <script src="scripts.js"></script>
+  </body>
+</html>

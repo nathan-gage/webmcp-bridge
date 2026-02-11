@@ -1,0 +1,314 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  color: #1a1a1a;
+  background: #f5f5f5;
+  line-height: 1.5;
+}
+
+.container {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+header {
+  margin-bottom: 32px;
+}
+
+h1 {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.subtitle {
+  color: #666;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+h2 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #444;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+/* --- Install section --- */
+
+.install-section {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px;
+  border: 1px solid #e0e0e0;
+}
+
+.input-row {
+  display: flex;
+  gap: 8px;
+}
+
+#specifier-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+#specifier-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+#install-btn {
+  padding: 8px 20px;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+#install-btn:hover {
+  background: #2563eb;
+}
+
+#install-btn:disabled {
+  background: #93c5fd;
+  cursor: not-allowed;
+}
+
+.install-status {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.install-status.success {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.install-status.error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.install-status.loading {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+/* --- Packages section --- */
+
+.packages-section {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px;
+  border: 1px solid #e0e0e0;
+}
+
+.package-card {
+  padding: 14px;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  background: #fafafa;
+}
+
+.package-card:last-child {
+  margin-bottom: 0;
+}
+
+.package-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.package-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.package-version {
+  font-size: 12px;
+  color: #888;
+  margin-left: 8px;
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
+}
+
+.package-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.package-description {
+  font-size: 13px;
+  color: #555;
+  margin-bottom: 8px;
+}
+
+.package-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: #888;
+}
+
+.package-meta a {
+  color: #3b82f6;
+  text-decoration: none;
+}
+
+.package-meta a:hover {
+  text-decoration: underline;
+}
+
+.package-scripts {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #666;
+}
+
+.package-scripts summary {
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.script-item {
+  padding: 4px 0 4px 12px;
+  border-left: 2px solid #e0e0e0;
+  margin-top: 4px;
+}
+
+.script-name {
+  font-weight: 500;
+}
+
+.script-matches {
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
+  font-size: 11px;
+  color: #888;
+}
+
+/* Toggle switch */
+.toggle {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: #ccc;
+  border-radius: 20px;
+  transition: background 0.2s;
+}
+
+.toggle-slider::before {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  left: 2px;
+  bottom: 2px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.toggle input:checked + .toggle-slider {
+  background: #22c55e;
+}
+
+.toggle input:checked + .toggle-slider::before {
+  transform: translateX(16px);
+}
+
+/* Uninstall button */
+.btn-uninstall {
+  padding: 4px 10px;
+  font-size: 12px;
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-uninstall:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: #fef2f2;
+}
+
+/* --- Registry section --- */
+
+.registry-section {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid #e0e0e0;
+}
+
+.registry-placeholder {
+  text-align: center;
+  padding: 24px 0;
+  color: #888;
+}
+
+.registry-placeholder .hint {
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.registry-placeholder code {
+  background: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+/* --- Empty state --- */
+
+.empty {
+  text-align: center;
+  color: #999;
+  padding: 24px 0;
+  font-size: 13px;
+}

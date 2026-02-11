@@ -1,0 +1,17 @@
+{
+  "name": "example-tools",
+  "version": "1.0.0",
+  "description": "Example WebMCP bridge scripts for testing",
+  "author": "webmcp-bridge",
+  "license": "MIT",
+  "scripts": [
+    {
+      "id": "example-hello",
+      "name": "Hello World",
+      "description": "A simple hello-world tool for testing the marketplace",
+      "file": "scripts/example.js",
+      "matches": ["<all_urls>"],
+      "runAt": "document_idle"
+    }
+  ]
+}

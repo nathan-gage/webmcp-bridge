@@ -102,3 +102,21 @@ h2 {
   padding: 16px 0;
   font-size: 12px;
 }
+
+.footer {
+  border-top: 1px solid #eee;
+  padding-top: 8px;
+  margin-top: 8px;
+  text-align: center;
+}
+
+.footer a {
+  color: #3b82f6;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}
