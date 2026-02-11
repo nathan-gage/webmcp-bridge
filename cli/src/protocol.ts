@@ -34,10 +34,7 @@ export interface ToolResultMessage {
 }
 
 /** Discriminated union of all wire messages */
-export type WireMessage =
-  | RegisterToolsMessage
-  | ExecuteToolMessage
-  | ToolResultMessage;
+export type WireMessage = RegisterToolsMessage | ExecuteToolMessage | ToolResultMessage;
 
 /** Type guard for RegisterToolsMessage */
 export function isRegisterTools(msg: unknown): msg is RegisterToolsMessage {

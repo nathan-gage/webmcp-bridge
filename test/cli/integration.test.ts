@@ -61,10 +61,7 @@ describe("full flow: extension registration → tool call → result", () => {
     await new Promise((r) => setTimeout(r, 50));
 
     expect(server.getTools()).toHaveLength(2);
-    expect(server.getTools().map((t) => t.name)).toEqual([
-      "get_page_title",
-      "click_element",
-    ]);
+    expect(server.getTools().map((t) => t.name)).toEqual(["get_page_title", "click_element"]);
 
     // 3. Extension handles tool calls
     ext.on("message", (data) => {
@@ -96,7 +93,7 @@ describe("full flow: extension registration → tool call → result", () => {
       JSON.stringify({
         type: "register_tools",
         tools: [{ name: "tool_a", description: "A", inputSchema: {} }],
-      })
+      }),
     );
     await new Promise((r) => setTimeout(r, 50));
     expect(server.getTools().map((t) => t.name)).toEqual(["tool_a"]);
@@ -109,7 +106,7 @@ describe("full flow: extension registration → tool call → result", () => {
           { name: "tool_b", description: "B", inputSchema: {} },
           { name: "tool_c", description: "C", inputSchema: {} },
         ],
-      })
+      }),
     );
     await new Promise((r) => setTimeout(r, 50));
     expect(server.getTools().map((t) => t.name)).toEqual(["tool_b", "tool_c"]);
@@ -130,7 +127,7 @@ describe("full flow: extension registration → tool call → result", () => {
             type: "tool_result",
             callId: msg.callId,
             result: `result_${msg.name}`,
-          })
+          }),
         );
       }
     });
@@ -162,7 +159,7 @@ describe("full flow: extension registration → tool call → result", () => {
             callId: msg.callId,
             error: "Element not found: #missing",
             isError: true,
-          })
+          }),
         );
       }
     });
@@ -180,19 +177,16 @@ describe("full flow: extension registration → tool call → result", () => {
     server = await createWsServer({ port: 0, token: "bootstrap-token" });
 
     // 1. Extension discovers token via bootstrap endpoint
-    const bootstrapRes = await fetch(
-      `http://127.0.0.1:${server.port}/.well-known/webmcp-bridge`,
-      { headers: { Origin: "chrome-extension://test-id" } }
-    );
+    const bootstrapRes = await fetch(`http://127.0.0.1:${server.port}/.well-known/webmcp-bridge`, {
+      headers: { Origin: "chrome-extension://test-id" },
+    });
     expect(bootstrapRes.status).toBe(200);
     const { token } = (await bootstrapRes.json()) as { token: string };
     expect(token).toBe("bootstrap-token");
 
     // 2. Extension connects with discovered token
     const ext = await new Promise<WebSocket>((resolve, reject) => {
-      const ws = new WebSocket(
-        `ws://127.0.0.1:${server.port}/?token=${token}`
-      );
+      const ws = new WebSocket(`ws://127.0.0.1:${server.port}/?token=${token}`);
       ws.on("open", () => resolve(ws));
       ws.on("error", reject);
     });
@@ -209,7 +203,7 @@ describe("full flow: extension registration → tool call → result", () => {
             inputSchema: { type: "object", properties: { url: { type: "string" } } },
           },
         ],
-      })
+      }),
     );
     await new Promise((r) => setTimeout(r, 50));
 
@@ -221,7 +215,7 @@ describe("full flow: extension registration → tool call → result", () => {
             type: "tool_result",
             callId: msg.callId,
             result: { navigated: true, url: msg.arguments.url },
-          })
+          }),
         );
       }
     });
@@ -260,7 +254,7 @@ describe("full flow: extension registration → tool call → result", () => {
       JSON.stringify({
         type: "register_tools",
         tools: [{ name: "old", description: "Old tool", inputSchema: {} }],
-      })
+      }),
     );
     await new Promise((r) => setTimeout(r, 50));
     expect(server.getTools()[0].name).toBe("old");
@@ -271,7 +265,7 @@ describe("full flow: extension registration → tool call → result", () => {
       JSON.stringify({
         type: "register_tools",
         tools: [{ name: "new", description: "New tool", inputSchema: {} }],
-      })
+      }),
     );
     await new Promise((r) => setTimeout(r, 50));
     expect(server.getTools()[0].name).toBe("new");

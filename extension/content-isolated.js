@@ -18,7 +18,7 @@
   chrome.runtime.onMessage.addListener((message) => {
     window.postMessage(
       { ...message, source: "webmcp-isolated", nonce: NONCE },
-      window.location.origin
+      window.location.origin,
     );
   });
 })();

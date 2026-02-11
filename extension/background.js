@@ -152,11 +152,13 @@ function handleExecuteTool(msg) {
 
   if (targetTabId === null) {
     if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({
-        type: "tool_result",
-        callId,
-        error: `Tool "${name}" not found in any tab`,
-      }));
+      ws.send(
+        JSON.stringify({
+          type: "tool_result",
+          callId,
+          error: `Tool "${name}" not found in any tab`,
+        }),
+      );
     }
     return;
   }
@@ -193,12 +195,14 @@ chrome.runtime.onMessage.addListener((message, sender) => {
 
   if (message.type === "tool-result") {
     if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({
-        type: "tool_result",
-        callId: message.callId,
-        result: message.result,
-        error: message.error,
-      }));
+      ws.send(
+        JSON.stringify({
+          type: "tool_result",
+          callId: message.callId,
+          result: message.result,
+          error: message.error,
+        }),
+      );
     }
   }
 });

@@ -16,9 +16,7 @@ async function main() {
   await writePortFile(wsServer.port, wsServer.token);
 
   // Log to stderr (stdout is reserved for MCP stdio)
-  process.stderr.write(
-    `webmcp-bridge listening on 127.0.0.1:${wsServer.port}\n`
-  );
+  process.stderr.write(`webmcp-bridge listening on 127.0.0.1:${wsServer.port}\n`);
 
   // Start MCP server on stdio
   const mcpServer = createMcpServer(wsServer);

@@ -1,7 +1,7 @@
-import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
+import { describe, test, expect, mock } from "bun:test";
 import type { WsServer } from "../../cli/src/ws-server.js";
-import type { ToolSchema, ToolResultMessage } from "../../cli/src/protocol.js";
-import { createMcpServer, type McpBridgeServer } from "../../cli/src/mcp-server.js";
+import type { ToolResultMessage } from "../../cli/src/protocol.js";
+import { createMcpServer } from "../../cli/src/mcp-server.js";
 
 /** Create a mock WsServer for testing */
 function createMockWsServer(overrides: Partial<WsServer> = {}): WsServer & {
@@ -17,13 +17,15 @@ function createMockWsServer(overrides: Partial<WsServer> = {}): WsServer & {
     token: "mock-token",
     getTools: () => tools,
     isExtensionConnected: () => connected,
-    executeTool: mock(async (name: string, args: Record<string, unknown>): Promise<ToolResultMessage> => {
-      return {
-        type: "tool_result",
-        callId: "mock-call-id",
-        result: { name, args },
-      };
-    }),
+    executeTool: mock(
+      async (name: string, args: Record<string, unknown>): Promise<ToolResultMessage> => {
+        return {
+          type: "tool_result",
+          callId: "mock-call-id",
+          result: { name, args },
+        };
+      },
+    ),
     onToolsChanged: (cb: (tools: ToolSchema[]) => void) => {
       toolsChangedCb = cb;
     },
@@ -77,7 +79,7 @@ describe("tool synchronization", () => {
 
   test("syncs tools when _simulateToolsChanged fires after start would register callback", () => {
     const ws = createMockWsServer();
-    const mcpServer = createMcpServer(ws);
+    createMcpServer(ws);
     // After start(), the callback gets wired up
     // We can verify the mock server can simulate tool changes
     ws._simulateToolsChanged([
@@ -117,8 +119,6 @@ describe("tool execution forwarding", () => {
       }),
     });
 
-    await expect(ws.executeTool("test", {})).rejects.toThrow(
-      "No extension connected"
-    );
+    await expect(ws.executeTool("test", {})).rejects.toThrow("No extension connected");
   });
 });

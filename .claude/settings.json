@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:oxc.rs)",
+      "Bash(bun run lint:*)",
+      "Bash(bun run typecheck:*)",
+      "Bash(bun run format:*)",
+      "Bash(bun run test:*)",
+      "Bash(bun run build:*)",
+      "Bash(bun test:*)"
+    ]
+  }
+}

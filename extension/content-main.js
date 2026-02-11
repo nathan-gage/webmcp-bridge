@@ -7,7 +7,10 @@
   const toolMap = new Map(); // name → { serialized, execute }
 
   function postToIsolated(type, payload) {
-    window.postMessage({ source: "webmcp-main", nonce: NONCE, type, ...payload }, window.location.origin);
+    window.postMessage(
+      { source: "webmcp-main", nonce: NONCE, type, ...payload },
+      window.location.origin,
+    );
   }
 
   function broadcastToolsChanged() {

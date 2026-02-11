@@ -7,12 +7,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { randomUUID } from "node:crypto";
 import { WebSocketServer, type WebSocket } from "ws";
-import type {
-  ToolSchema,
-  ExecuteToolMessage,
-  WireMessage,
-  ToolResultMessage,
-} from "./protocol.js";
+import type { ToolSchema, ExecuteToolMessage, WireMessage, ToolResultMessage } from "./protocol.js";
 import { isRegisterTools, isToolResult } from "./protocol.js";
 import { generateToken, validateOrigin } from "./security.js";
 
