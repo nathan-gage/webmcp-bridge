@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 0 # need full history to verify tag signature
+          fetch-depth: 1
 
       # Fail if someone other than the repo owner pushed this tag
       - name: Verify actor
@@ -25,23 +25,20 @@ jobs:
             exit 1
           fi
 
-      # Fail if the tagged commit is not signed with a verified signature
-      - name: Verify tag signature
+      # Verify the tagged commit has a verified signature via GitHub API
+      # (git CLI on the runner lacks the signer's public key, so we use the API)
+      - name: Verify commit signature
         run: |
-          TAG="${{ github.ref_name }}"
-          # Check if the tag itself is signed (annotated + signed tag)
-          if git tag -v "$TAG" 2>/dev/null; then
-            echo "Tag $TAG has a verified signature"
-          else
-            # Fall back to checking if the tagged commit is signed
-            COMMIT=$(git rev-list -1 "$TAG")
-            VERIFIED=$(git log --format='%G?' -1 "$COMMIT")
-            if [ "$VERIFIED" != "G" ] && [ "$VERIFIED" != "U" ]; then
-              echo "::error::Tagged commit $COMMIT is not signed (status: $VERIFIED)"
-              exit 1
-            fi
-            echo "Tagged commit $COMMIT has a verified signature"
+          COMMIT=$(git rev-list -1 "${{ github.ref_name }}")
+          VERIFIED=$(gh api "repos/${{ github.repository }}/commits/$COMMIT" --jq '.commit.verification.verified')
+          if [ "$VERIFIED" != "true" ]; then
+            REASON=$(gh api "repos/${{ github.repository }}/commits/$COMMIT" --jq '.commit.verification.reason')
+            echo "::error::Tagged commit $COMMIT is not verified (reason: $REASON)"
+            exit 1
           fi
+          echo "Commit $COMMIT has a verified signature"
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       - uses: oven-sh/setup-bun@v2
 
