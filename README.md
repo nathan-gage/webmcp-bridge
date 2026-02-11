@@ -47,12 +47,13 @@ Open a [WebMCP-enabled site](https://googlechromelabs.github.io/webmcp-tools/dem
 ## Development
 
 ```bash
-bun install       # deps
-bun test          # unit tests
-bun run test:e2e  # end-to-end
-bun run dev       # dev mode
-bun run build     # build for npm
-bun run lint      # typecheck
+bun install              # deps
+bun test                 # unit tests
+bun run test:e2e:pw      # Playwright E2E (needs Chrome Canary 146+)
+bun run test:e2e:install # one-time: download Chrome for Testing Canary
+bun run dev              # dev mode
+bun run build            # build for npm
+bun run lint             # lint
 ```
 
 ## Security

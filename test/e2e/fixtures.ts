@@ -13,8 +13,8 @@
  */
 
 import { test as base, chromium, type BrowserContext } from "@playwright/test";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { createServer, type Server } from "node:http";
 import { readFileSync, readdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
@@ -95,28 +95,6 @@ function startTestServer(): Promise<{ server: Server; port: number }> {
   });
 }
 
-/** Poll mcpClient.listTools() until a non-builtin tool appears or timeout */
-async function waitForTools(client: Client, timeoutMs = 30_000): Promise<void> {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    const { tools } = await client.listTools();
-    if (tools.some((t) => t.name !== "webmcp-status")) return;
-    await new Promise((r) => setTimeout(r, 500));
-  }
-  throw new Error(`Timed out waiting for extension tools after ${timeoutMs}ms`);
-}
-
-/** Wait for a specific tool to appear in the MCP tool list */
-async function waitForTool(client: Client, toolName: string, timeoutMs = 15_000): Promise<void> {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    const { tools } = await client.listTools();
-    if (tools.some((t) => t.name === toolName)) return;
-    await new Promise((r) => setTimeout(r, 500));
-  }
-  throw new Error(`Timed out waiting for tool "${toolName}" after ${timeoutMs}ms`);
-}
-
 type WorkerFixtures = {
   mcpClient: Client;
   sharedContext: BrowserContext;
@@ -125,7 +103,8 @@ type WorkerFixtures = {
 
 export const test = base.extend<{}, WorkerFixtures>({
   baseUrl: [
-    async (_deps: unknown, use: (value: string) => Promise<void>) => {
+    // eslint-disable-next-line no-empty-pattern
+    async ({}, use: (value: string) => Promise<void>) => {
       const { server, port } = await startTestServer();
       await use(`http://127.0.0.1:${port}`);
       server.close();
@@ -135,7 +114,8 @@ export const test = base.extend<{}, WorkerFixtures>({
 
   // CLI must start BEFORE Chrome so the extension can find it on first port scan.
   mcpClient: [
-    async (_deps: unknown, use: (value: Client) => Promise<void>) => {
+    // eslint-disable-next-line no-empty-pattern
+    async ({}, use: (value: Client) => Promise<void>) => {
       const transport = new StdioClientTransport({
         command: "node",
         args: [CLI_ENTRY],
@@ -184,5 +164,4 @@ export const test = base.extend<{}, WorkerFixtures>({
   ],
 });
 
-export { waitForTools, waitForTool };
 export { expect } from "@playwright/test";

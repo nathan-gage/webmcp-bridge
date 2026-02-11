@@ -208,7 +208,6 @@ function connectWS(port, token) {
 
   ws.onopen = () => {
     reconnectAttempt = 0;
-    startKeepalive();
     updateBadge();
     // Push cached tools immediately if we have any (fast restore).
     if (getAggregatedTools().length > 0) {
@@ -244,7 +243,6 @@ function connectWS(port, token) {
     ws = null;
     connectedPort = null;
     authToken = null;
-    stopKeepalive();
     updateBadge();
     scheduleReconnect();
   };
@@ -384,22 +382,8 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   if (changeInfo.status === "loading" && tabs.has(tabId)) {
-    // Cancel pending calls for this tab — content script is being destroyed
-    for (const [callId, cTabId] of pendingCalls) {
-      if (cTabId === tabId) {
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(
-            JSON.stringify({
-              type: "tool_result",
-              callId,
-              error: "Page navigated during tool execution",
-              isError: true,
-            }),
-          );
-        }
-        pendingCalls.delete(callId);
-      }
-    }
+    // Don't cancel pending calls — the tool result may still arrive after
+    // SPA navigation. The CLI applies a grace period timeout instead.
 
     // Page is navigating; clear tools until new ones are registered
     const tab = tabs.get(tabId);
@@ -433,6 +417,7 @@ chrome.runtime.onConnect.addListener((port) => {
 // --- Start ---
 // Load persisted tab state, then connect to CLI.
 
+startKeepalive();
 loadCachedTabs().then(() => {
   ensureConnected();
 });
