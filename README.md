@@ -44,16 +44,13 @@ Add to your MCP client:
 
 Open a [WebMCP-enabled site](https://googlechromelabs.github.io/webmcp-tools/demos/react-flightsearch/). Extension badge goes green. Tools appear in your client.
 
-## Marketplace
+## Plugin Marketplace
 
-Install community bridge scripts to add WebMCP tools to any site — like Tampermonkey for MCP.
+Not every website supports WebMCP natively — the plugin marketplace lets you add tools to any site. Install community-authored bridge scripts that register MCP tools on pages that don't have them yet.
 
-```bash
-bun run chrome           # launch Chrome with extension pinned to toolbar
-bun run chrome:dev       # launch Chrome + CLI together
-```
+Click **Manage Plugins** in the extension popup to browse and install. Plugins are installed from GitHub — just enter a package specifier like `user/repo` and the extension handles the rest.
 
-Open the extension popup and click **Manage Plugins** to install packages from GitHub (`user/repo@ref`) or load from a local folder. See `examples/marketplace/` for the package format.
+Want to build your own plugin? Use the `/webmcp-marketplace-plugins` skill in Claude Code to get started.
 
 ## Development
 
@@ -65,8 +62,8 @@ bun run test:e2e:install # one-time: download Chrome for Testing Canary
 bun run dev              # dev mode
 bun run build            # build for npm
 bun run lint             # lint
-bun run chrome           # launch Chrome with extension (pinned to toolbar)
-bun run chrome:dev       # Chrome + CLI in dev mode
+bun run chrome           # launch dev Chrome with extension
+bun run chrome:dev       # launch dev Chrome + CLI together
 ```
 
 ## Security
