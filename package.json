@@ -19,7 +19,9 @@
     "test:e2e": "bun run test/e2e.ts",
     "test:e2e:pw": "bun run build && playwright test",
     "test:e2e:install": "npx @puppeteer/browsers install chrome@canary --path .chrome-for-testing",
-    "clean": "rm -rf cli/dist"
+    "clean": "rm -rf cli/dist",
+    "chrome": "bun scripts/chrome-dev.ts",
+    "chrome:dev": "bun scripts/chrome-dev.ts & bun run dev"
   },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",

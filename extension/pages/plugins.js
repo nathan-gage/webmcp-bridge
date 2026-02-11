@@ -208,6 +208,28 @@ function createPackageCard(pkg) {
   return card;
 }
 
+// --- Theme switcher ---
+
+function applyTheme(theme) {
+  if (theme === "auto") {
+    document.documentElement.removeAttribute("data-theme");
+  } else {
+    document.documentElement.setAttribute("data-theme", theme);
+  }
+
+  for (const btn of document.querySelectorAll(".theme-btn")) {
+    btn.classList.toggle("active", btn.dataset.theme === theme);
+  }
+
+  localStorage.setItem("webmcp-theme", theme);
+}
+
+for (const btn of document.querySelectorAll(".theme-btn")) {
+  btn.addEventListener("click", () => applyTheme(btn.dataset.theme));
+}
+
+applyTheme(localStorage.getItem("webmcp-theme") || "auto");
+
 // --- Init ---
 
 loadPackages();
