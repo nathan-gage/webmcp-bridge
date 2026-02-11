@@ -68,7 +68,9 @@ function findChrome(): string {
     const gitCommonDir = Bun.spawnSync(
       ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
       { cwd: ROOT },
-    ).stdout.toString().trim();
+    )
+      .stdout.toString()
+      .trim();
     if (gitCommonDir) {
       const mainRepo = resolve(gitCommonDir, "..");
       if (mainRepo !== ROOT) {

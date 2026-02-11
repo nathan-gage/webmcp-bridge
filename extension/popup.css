@@ -124,16 +124,37 @@ h2 {
 /* --- Dark mode --- */
 
 @media (prefers-color-scheme: dark) {
-  body { color: #e0e0e0; background: #1e1e1e; }
-  h2 { color: #999; }
+  body {
+    color: #e0e0e0;
+    background: #1e1e1e;
+  }
+  h2 {
+    color: #999;
+  }
 
-  .status.connected { background: #052e16; color: #4ade80; }
-  .status.disconnected { background: #2a0a0a; color: #fca5a5; }
+  .status.connected {
+    background: #052e16;
+    color: #4ade80;
+  }
+  .status.disconnected {
+    background: #2a0a0a;
+    color: #fca5a5;
+  }
 
-  #tabs-list li { background: #2a2a2a; }
-  .tab-tools { color: #999; }
-  .empty { color: #666; }
+  #tabs-list li {
+    background: #2a2a2a;
+  }
+  .tab-tools {
+    color: #999;
+  }
+  .empty {
+    color: #666;
+  }
 
-  .footer { border-top-color: #333; }
-  .footer a { color: #60a5fa; }
+  .footer {
+    border-top-color: #333;
+  }
+  .footer a {
+    color: #60a5fa;
+  }
 }

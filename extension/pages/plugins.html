@@ -32,6 +32,9 @@
               spellcheck="false"
             />
             <button type="submit" id="install-btn">Install</button>
+            <span class="separator">or</span>
+            <button type="button" id="load-folder-btn">Load Folder</button>
+            <input type="file" id="folder-input" webkitdirectory hidden />
           </div>
           <div id="install-status" class="install-status" hidden></div>
         </form>
@@ -47,7 +50,9 @@
         <h2>Browse Registry</h2>
         <div class="registry-placeholder">
           <p>Curated registry coming soon.</p>
-          <p class="hint">For now, install packages directly using <code>owner/repo@ref</code> above.</p>
+          <p class="hint">
+            For now, install packages directly using <code>owner/repo@ref</code> above.
+          </p>
         </div>
       </section>
     </div>

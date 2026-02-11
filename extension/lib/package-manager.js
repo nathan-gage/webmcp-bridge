@@ -57,6 +57,56 @@ async function installPackage(specifier) {
 }
 
 /**
+ * Installs a package from a pre-loaded manifest and scripts map.
+ * Used for local folder installs where files are read client-side.
+ *
+ * @param {object} manifest - Parsed webmcp-bridge.json
+ * @param {Map<string, string>} scripts - scriptId → code
+ * @returns {Promise<{ key: string, manifest: object, warnings: string[] }>}
+ */
+async function installLocal(manifest, scripts) {
+  const { githubFetcher, scriptValidator } = globalThis.__webmcpExports;
+
+  githubFetcher.validateManifest(manifest);
+
+  const validation = scriptValidator.validatePackageScripts(scripts);
+  if (!validation.valid) {
+    throw new Error(`Validation failed:\n${validation.errors.join("\n")}`);
+  }
+
+  const key = `local/${manifest.name}@local`;
+
+  const updates = {};
+  const data = await chrome.storage.local.get("marketplace:packages");
+  const packages = data["marketplace:packages"] || {};
+
+  packages[key] = {
+    id: `local/${manifest.name}`,
+    ref: "local",
+    manifest,
+    installedAt: Date.now(),
+    enabled: true,
+  };
+  updates["marketplace:packages"] = packages;
+
+  for (const script of manifest.scripts) {
+    const code = scripts.get(script.id);
+    if (!code) throw new Error(`Missing script code for "${script.id}"`);
+    const storageKey = `marketplace:script:${key}/${script.id}`;
+    updates[storageKey] = {
+      code,
+      hash: await hashCode(code),
+      matches: script.matches,
+      runAt: script.runAt || "document_idle",
+    };
+  }
+
+  await chrome.storage.local.set(updates);
+
+  return { key, manifest, warnings: validation.warnings };
+}
+
+/**
  * Uninstalls a package by its storage key.
  *
  * @param {string} key - "owner/repo@ref"
@@ -144,6 +194,7 @@ if (typeof globalThis.__webmcpExports === "undefined") {
 }
 globalThis.__webmcpExports.packageManager = {
   installPackage,
+  installLocal,
   uninstallPackage,
   togglePackage,
   listPackages,

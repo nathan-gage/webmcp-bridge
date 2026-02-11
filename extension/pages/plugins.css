@@ -232,6 +232,30 @@ h2 {
   cursor: not-allowed;
 }
 
+.separator {
+  color: var(--text-muted);
+  font-size: 13px;
+  align-self: center;
+}
+
+#load-folder-btn {
+  padding: 8px 16px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+#load-folder-btn:hover {
+  border-color: var(--link);
+  color: var(--link);
+}
+
 .install-status {
   margin-top: 10px;
   padding: 8px 12px;

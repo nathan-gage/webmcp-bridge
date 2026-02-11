@@ -14,7 +14,10 @@ const DANGEROUS_PATTERNS = [
   // Data exfiltration via image/beacon
   [/\bnew\s+Image\s*\(\s*\)\s*\.\s*src\s*=/, "image-based data exfiltration"],
   // WebSocket to external hosts (not localhost)
-  [/\bnew\s+WebSocket\s*\(\s*['"`]wss?:\/\/(?!127\.0\.0\.1|localhost)/, "WebSocket to external host"],
+  [
+    /\bnew\s+WebSocket\s*\(\s*['"`]wss?:\/\/(?!127\.0\.0\.1|localhost)/,
+    "WebSocket to external host",
+  ],
   // Inline event handlers that eval
   [/\bsetAttribute\s*\(\s*['"`]on/, "setting inline event handler attribute"],
 ];
@@ -74,12 +77,8 @@ function validateScript(code, scriptId) {
   const errors = [];
   const warnings = [];
 
-  // Syntax check via Function constructor (does NOT execute)
-  try {
-    new Function(code);
-  } catch (e) {
-    errors.push(`Syntax error in "${scriptId}": ${e.message}`);
-  }
+  // Note: no syntax check here — new Function() is blocked by extension CSP.
+  // Syntax errors will surface at injection time via chrome.scripting.executeScript.
 
   // Dangerous pattern scan
   for (const [pattern, description] of DANGEROUS_PATTERNS) {

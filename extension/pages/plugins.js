@@ -41,6 +41,99 @@ installForm.addEventListener("submit", async (e) => {
   }
 });
 
+// --- Load from folder ---
+
+const loadFolderBtn = document.getElementById("load-folder-btn");
+const folderInput = document.getElementById("folder-input");
+
+loadFolderBtn.addEventListener("click", () => folderInput.click());
+
+folderInput.addEventListener("change", async () => {
+  const files = Array.from(folderInput.files);
+  if (files.length === 0) return;
+
+  // Fast fail: folder must contain webmcp-bridge.json at the root level
+  // webkitRelativePath is "foldername/webmcp-bridge.json" — exactly one slash for root-level files
+  const manifestFile = files.find(
+    (f) => f.name === "webmcp-bridge.json" && f.webkitRelativePath.split("/").length === 2,
+  );
+  if (!manifestFile) {
+    const folderName = files[0]?.webkitRelativePath.split("/")[0] || "selected folder";
+    showStatus(
+      `Not a WebMCP plugin: "${folderName}" has no webmcp-bridge.json at its root`,
+      "error",
+    );
+    folderInput.value = "";
+    return;
+  }
+
+  showStatus("Loading from folder...", "loading");
+
+  try {
+    const manifestText = await manifestFile.text();
+    let manifest;
+    try {
+      manifest = JSON.parse(manifestText);
+    } catch {
+      showStatus("webmcp-bridge.json is not valid JSON", "error");
+      return;
+    }
+
+    // Validate manifest structure before doing any more work
+    if (!manifest.name) {
+      showStatus('Manifest missing required "name" field', "error");
+      return;
+    }
+    if (!manifest.version) {
+      showStatus('Manifest missing required "version" field', "error");
+      return;
+    }
+    if (!Array.isArray(manifest.scripts) || manifest.scripts.length === 0) {
+      showStatus("Manifest must have a non-empty scripts array", "error");
+      return;
+    }
+
+    // Read each script file referenced in the manifest
+    const scripts = {};
+    for (const script of manifest.scripts) {
+      if (!script.id || !script.file) {
+        showStatus(`Script entry missing "id" or "file": ${JSON.stringify(script)}`, "error");
+        return;
+      }
+      // webkitRelativePath: "foldername/scripts/example.js"
+      // script.file: "scripts/example.js"
+      const match = files.find((f) => f.webkitRelativePath.endsWith("/" + script.file));
+      if (!match) {
+        showStatus(`Script file not found in folder: ${script.file}`, "error");
+        return;
+      }
+      scripts[script.id] = await match.text();
+    }
+
+    const response = await chrome.runtime.sendMessage({
+      type: "marketplace:install-local",
+      manifest,
+      scripts,
+    });
+
+    if (response.success) {
+      let msg = `Loaded ${response.key}`;
+      if (response.warnings && response.warnings.length > 0) {
+        msg += `\nWarnings:\n${response.warnings.join("\n")}`;
+      }
+      showStatus(msg, "success");
+      await loadPackages();
+    } else {
+      showStatus(response.error, "error");
+    }
+  } catch (err) {
+    showStatus(err.message, "error");
+  }
+
+  // Reset so the same folder can be re-selected
+  folderInput.value = "";
+});
+
 // --- Status display ---
 
 function showStatus(message, type) {

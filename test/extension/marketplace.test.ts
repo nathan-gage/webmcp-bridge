@@ -120,9 +120,7 @@ describe("github-fetcher: validateManifest", () => {
   const validManifest = {
     name: "test-pkg",
     version: "1.0.0",
-    scripts: [
-      { id: "s1", file: "scripts/s1.js", matches: ["*://example.com/*"] },
-    ],
+    scripts: [{ id: "s1", file: "scripts/s1.js", matches: ["*://example.com/*"] }],
   };
 
   test("accepts valid manifest", () => {
@@ -178,7 +176,10 @@ const DANGEROUS_PATTERNS: [RegExp, string][] = [
   [/\bimportScripts\s*\(/, "importScripts() call"],
   [/\bcreateElement\s*\(\s*['"`]script['"`]\s*\)/, "dynamic <script> creation"],
   [/\bnew\s+Image\s*\(\s*\)\s*\.\s*src\s*=/, "image-based data exfiltration"],
-  [/\bnew\s+WebSocket\s*\(\s*['"`]wss?:\/\/(?!127\.0\.0\.1|localhost)/, "WebSocket to external host"],
+  [
+    /\bnew\s+WebSocket\s*\(\s*['"`]wss?:\/\/(?!127\.0\.0\.1|localhost)/,
+    "WebSocket to external host",
+  ],
   [/\bsetAttribute\s*\(\s*['"`]on/, "setting inline event handler attribute"],
 ];
 
@@ -218,11 +219,8 @@ function validateScript(code: string, scriptId: string) {
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  try {
-    new Function(code);
-  } catch (e) {
-    errors.push(`Syntax error in "${scriptId}": ${(e as Error).message}`);
-  }
+  // No syntax check — new Function() is blocked by extension CSP.
+  // Kept in tests only to verify the pattern scanner still works.
 
   for (const [pattern, description] of DANGEROUS_PATTERNS) {
     if (pattern.test(code)) {
@@ -297,16 +295,10 @@ describe("script-validator", () => {
     expect(result.valid).toBe(true);
   });
 
-  test("catches syntax errors", () => {
-    const code = `function( { broken`;
-    const result = validateScript(code, "broken-script");
-    expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.includes("Syntax error"))).toBe(true);
-  });
-
   test("detects obfuscated code with many hex escapes", () => {
-    const hexes = Array.from({ length: 15 }, (_, i) =>
-      `\\x${i.toString(16).padStart(2, "0")}`,
+    const hexes = Array.from(
+      { length: 15 },
+      (_, i) => `\\x${i.toString(16).padStart(2, "0")}`,
     ).join("");
     const code = `var s = "${hexes}";`;
     const result = validateScript(code, "hex-script");
@@ -498,7 +490,13 @@ describe("package-manager: storage operations", () => {
       version: "1.0.0",
       description: "A test",
       scripts: [
-        { id: "s1", name: "Script 1", file: "scripts/s1.js", matches: ["<all_urls>"], runAt: "document_idle" },
+        {
+          id: "s1",
+          name: "Script 1",
+          file: "scripts/s1.js",
+          matches: ["<all_urls>"],
+          runAt: "document_idle",
+        },
       ],
     };
 
@@ -512,7 +510,7 @@ describe("package-manager: storage operations", () => {
       },
     };
     storage[`marketplace:script:${key}/s1`] = {
-      code: '(function(){})();',
+      code: "(function(){})();",
       hash: "sha256-abc",
       matches: ["<all_urls>"],
       runAt: "document_idle",
@@ -532,12 +530,21 @@ describe("package-manager: storage operations", () => {
       [key]: {
         id: "testuser/testrepo",
         ref: "v1.0.0",
-        manifest: { name: "test", version: "1.0.0", scripts: [{ id: "s1", file: "f.js", matches: ["*://*/*"] }] },
+        manifest: {
+          name: "test",
+          version: "1.0.0",
+          scripts: [{ id: "s1", file: "f.js", matches: ["*://*/*"] }],
+        },
         installedAt: Date.now(),
         enabled: true,
       },
     };
-    storage[`marketplace:script:${key}/s1`] = { code: "x", hash: "h", matches: ["*://*/*"], runAt: "document_idle" };
+    storage[`marketplace:script:${key}/s1`] = {
+      code: "x",
+      hash: "h",
+      matches: ["*://*/*"],
+      runAt: "document_idle",
+    };
 
     // Simulate uninstall
     const packages = { ...(storage["marketplace:packages"] as Record<string, unknown>) };
@@ -556,18 +563,105 @@ describe("package-manager: storage operations", () => {
       [key]: {
         id: "user/repo",
         ref: "main",
-        manifest: { name: "x", version: "1.0.0", scripts: [{ id: "s", file: "f.js", matches: ["*://*/*"] }] },
+        manifest: {
+          name: "x",
+          version: "1.0.0",
+          scripts: [{ id: "s", file: "f.js", matches: ["*://*/*"] }],
+        },
         installedAt: Date.now(),
         enabled: true,
       },
     };
 
     // Simulate toggle off
-    const packages = { ...(storage["marketplace:packages"] as Record<string, unknown>) } as Record<string, any>;
+    const packages = { ...(storage["marketplace:packages"] as Record<string, unknown>) } as Record<
+      string,
+      any
+    >;
     packages[key] = { ...packages[key], enabled: false };
     await (globalThis as any).chrome.storage.local.set({ "marketplace:packages": packages });
 
     const data = await (globalThis as any).chrome.storage.local.get("marketplace:packages");
     expect((data["marketplace:packages"] as any)[key].enabled).toBe(false);
+  });
+});
+
+// --- Example bridge script ---
+
+describe("examples/marketplace/scripts/example.js", () => {
+  test("registers hello_world tool with correct shape", async () => {
+    const registered: Record<string, unknown>[] = [];
+
+    // Mock navigator.modelContext
+    const fakeNavigator = {
+      modelContext: {
+        registerTool: (descriptor: Record<string, unknown>) => {
+          registered.push(descriptor);
+        },
+      },
+    };
+
+    // Read and run the example script with our mock
+    const code = await Bun.file("examples/marketplace/scripts/example.js").text();
+    const fn = new Function("navigator", code);
+    fn(fakeNavigator);
+
+    expect(registered).toHaveLength(1);
+    const tool = registered[0];
+    expect(tool.name).toBe("hello_world");
+    expect(tool.description).toBeString();
+    expect(tool.inputSchema).toBeDefined();
+    expect(typeof tool.execute).toBe("function");
+  });
+
+  test("execute returns greeting with default name", async () => {
+    let executeFn: (args: Record<string, unknown>) => unknown;
+
+    const fakeNavigator = {
+      modelContext: {
+        registerTool: (descriptor: Record<string, unknown>) => {
+          executeFn = descriptor.execute as typeof executeFn;
+        },
+      },
+    };
+
+    const code = await Bun.file("examples/marketplace/scripts/example.js").text();
+    new Function("navigator", code)(fakeNavigator);
+
+    const result = await executeFn!({});
+    expect(result).toEqual({
+      greeting: "Hello, World! This tool was injected via the WebMCP marketplace.",
+    });
+  });
+
+  test("execute returns greeting with custom name", async () => {
+    let executeFn: (args: Record<string, unknown>) => unknown;
+
+    const fakeNavigator = {
+      modelContext: {
+        registerTool: (descriptor: Record<string, unknown>) => {
+          executeFn = descriptor.execute as typeof executeFn;
+        },
+      },
+    };
+
+    const code = await Bun.file("examples/marketplace/scripts/example.js").text();
+    new Function("navigator", code)(fakeNavigator);
+
+    const result = await executeFn!({ name: "Alice" });
+    expect(result).toEqual({
+      greeting: "Hello, Alice! This tool was injected via the WebMCP marketplace.",
+    });
+  });
+
+  test("skips registration when modelContext is absent", async () => {
+    const registered: unknown[] = [];
+
+    const fakeNavigator = {};
+    const code = await Bun.file("examples/marketplace/scripts/example.js").text();
+
+    // Should not throw
+    new Function("navigator", code)(fakeNavigator);
+    expect(registered).toHaveLength(0);
   });
 });

@@ -355,6 +355,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     handleMarketplaceToggle(message, sendResponse);
     return true;
   }
+  if (message.type === "marketplace:install-local") {
+    handleMarketplaceInstallLocal(message, sendResponse);
+    return true;
+  }
   if (message.type === "marketplace:list") {
     handleMarketplaceList(sendResponse);
     return true;
@@ -365,9 +369,45 @@ async function handleMarketplaceInstall(message, sendResponse) {
   try {
     const { packageManager } = globalThis.__webmcpExports;
     const result = await packageManager.installPackage(message.specifier);
+    await injectIntoMatchingTabs();
     sendResponse({ success: true, key: result.key, warnings: result.warnings });
   } catch (e) {
     sendResponse({ success: false, error: e.message });
+  }
+}
+
+async function handleMarketplaceInstallLocal(message, sendResponse) {
+  try {
+    const { packageManager } = globalThis.__webmcpExports;
+    const scripts = new Map(Object.entries(message.scripts));
+    const result = await packageManager.installLocal(message.manifest, scripts);
+    await injectIntoMatchingTabs();
+    sendResponse({ success: true, key: result.key, warnings: result.warnings });
+  } catch (e) {
+    sendResponse({ success: false, error: e.message });
+  }
+}
+
+/** Inject matching marketplace scripts into all currently open tabs. */
+async function injectIntoMatchingTabs() {
+  const { scriptInjector } = globalThis.__webmcpExports;
+  if (!scriptInjector) return;
+
+  try {
+    const allTabs = await chrome.tabs.query({});
+    for (const tab of allTabs) {
+      if (!tab.id || !tab.url) continue;
+      const scripts = await scriptInjector.getMatchingScripts(tab.url, "document_idle");
+      for (const { code } of scripts) {
+        try {
+          await scriptInjector.injectScript(tab.id, code);
+        } catch {
+          // Tab may not be injectable (chrome://, extension pages, etc.)
+        }
+      }
+    }
+  } catch {
+    // tabs.query failed
   }
 }
 
