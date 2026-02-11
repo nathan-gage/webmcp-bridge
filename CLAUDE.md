@@ -23,14 +23,14 @@ bun run lint                 # TypeScript typecheck
 
 ## CLI (`cli/src/`)
 
-| File | Purpose |
-|------|---------|
-| `index.ts` | Entry point — starts WS server, writes discovery files, starts MCP stdio server, handles shutdown |
-| `mcp-server.ts` | MCP server using low-level `Server` class (NOT `McpServer` — see gotcha below). Handles `tools/list` and `tools/call` |
-| `ws-server.ts` | HTTP + WebSocket server on `127.0.0.1:{random port in 13100-13199}`. Bootstrap endpoint, token auth, message routing, 30s tool call timeout |
-| `protocol.ts` | Wire protocol types: `register_tools`, `execute_tool`, `tool_result`. Discriminated union + type guards |
-| `port-file.ts` | Reads/writes `~/.webmcp/port` and `~/.webmcp/token` for extension discovery |
-| `security.ts` | Token generation, secure file I/O (0700 dirs, 0600 files), origin validation |
+| File            | Purpose                                                                                                                                     |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `index.ts`      | Entry point — starts WS server, writes discovery files, starts MCP stdio server, handles shutdown                                           |
+| `mcp-server.ts` | MCP server using low-level `Server` class (NOT `McpServer` — see gotcha below). Handles `tools/list` and `tools/call`                       |
+| `ws-server.ts`  | HTTP + WebSocket server on `127.0.0.1:{random port in 13100-13199}`. Bootstrap endpoint, token auth, message routing, 30s tool call timeout |
+| `protocol.ts`   | Wire protocol types: `register_tools`, `execute_tool`, `tool_result`. Discriminated union + type guards                                     |
+| `port-file.ts`  | Reads/writes `~/.webmcp/port` and `~/.webmcp/token` for extension discovery                                                                 |
+| `security.ts`   | Token generation, secure file I/O (0700 dirs, 0600 files), origin validation                                                                |
 
 ### Key gotcha: MCP SDK and JSON Schema
 
@@ -38,13 +38,13 @@ bun run lint                 # TypeScript typecheck
 
 ## Extension (`extension/`)
 
-| File | World | Purpose |
-|------|-------|---------|
-| `content-main.js` | MAIN | Wraps `ModelContext.prototype` methods to intercept tool registrations. Posts `tools-changed` / `tool-result` messages with nonce |
-| `content-isolated.js` | ISOLATED | Generates nonce, relays messages between MAIN world (`window.postMessage`) and background (`chrome.runtime`) |
-| `background.js` | Service Worker | WS client to CLI, tab tracking, tool aggregation, port discovery with exponential backoff, badge management |
-| `popup.html/js/css` | — | Status popup showing connection state and active tools |
-| `manifest.json` | — | MV3 manifest. Content scripts run at `document_start` in both MAIN and ISOLATED worlds |
+| File                  | World          | Purpose                                                                                                                           |
+| --------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `content-main.js`     | MAIN           | Wraps `ModelContext.prototype` methods to intercept tool registrations. Posts `tools-changed` / `tool-result` messages with nonce |
+| `content-isolated.js` | ISOLATED       | Generates nonce, relays messages between MAIN world (`window.postMessage`) and background (`chrome.runtime`)                      |
+| `background.js`       | Service Worker | WS client to CLI, tab tracking, tool aggregation, port discovery with exponential backoff, badge management                       |
+| `popup.html/js/css`   | —              | Status popup showing connection state and active tools                                                                            |
+| `manifest.json`       | —              | MV3 manifest. Content scripts run at `document_start` in both MAIN and ISOLATED worlds                                            |
 
 ### Key gotcha: Prototype wrapping, not instance wrapping
 
@@ -53,6 +53,7 @@ bun run lint                 # TypeScript typecheck
 ### Key gotcha: WebMCP API signature
 
 The native `ModelContext` API uses single-argument descriptors:
+
 - `registerTool(descriptor)` where descriptor is `{name, description, inputSchema, execute}`
 - `provideContext({tools: [descriptor, ...]})` — tools is an **array**, not an object
 - Field is `inputSchema` (not `schema`)
@@ -64,12 +65,14 @@ Chrome extension service workers making `fetch()` requests to `host_permissions`
 ## Wire Protocol (WebSocket)
 
 Extension → CLI:
+
 ```json
 {"type": "register_tools", "tools": [{"name": "...", "description": "...", "inputSchema": {...}}]}
 {"type": "tool_result", "callId": "uuid", "result": ..., "error": "..."}
 ```
 
 CLI → Extension:
+
 ```json
 {"type": "execute_tool", "callId": "uuid", "name": "toolName", "arguments": {...}}
 ```
@@ -85,13 +88,13 @@ CLI → Extension:
 
 ## Tests (`test/`)
 
-| File | Count | Tests |
-|------|-------|-------|
-| `test/cli/security.test.ts` | 15 | Token gen, file perms, origin validation |
-| `test/cli/ws-server.test.ts` | 19 | Connection auth, bootstrap endpoint, tool registration, execution, disconnect |
-| `test/cli/mcp-server.test.ts` | 7 | Tool sync, execution forwarding, status tool |
-| `test/cli/integration.test.ts` | 7 | Full stdio→WS→mock-extension flow |
-| `test/extension/content-main.test.ts` | 14 | modelContext interception, nonce validation, tool execution |
+| File                                  | Count | Tests                                                                         |
+| ------------------------------------- | ----- | ----------------------------------------------------------------------------- |
+| `test/cli/security.test.ts`           | 15    | Token gen, file perms, origin validation                                      |
+| `test/cli/ws-server.test.ts`          | 19    | Connection auth, bootstrap endpoint, tool registration, execution, disconnect |
+| `test/cli/mcp-server.test.ts`         | 7     | Tool sync, execution forwarding, status tool                                  |
+| `test/cli/integration.test.ts`        | 7     | Full stdio→WS→mock-extension flow                                             |
+| `test/extension/content-main.test.ts` | 14    | modelContext interception, nonce validation, tool execution                   |
 
 ## Development Tips
 

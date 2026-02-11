@@ -46,7 +46,7 @@ describe("ensureSecureDir", () => {
 
   test("fixes permissions on existing directory", async () => {
     const dir = join(tempDir, "existing");
-    const { mkdir, chmod } = await import("node:fs/promises");
+    const { mkdir } = await import("node:fs/promises");
     await mkdir(dir, { mode: 0o755 });
 
     await ensureSecureDir(dir);

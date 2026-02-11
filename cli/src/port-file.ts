@@ -5,12 +5,7 @@
 
 import { join } from "node:path";
 import { readFile } from "node:fs/promises";
-import {
-  WEBMCP_DIR,
-  ensureSecureDir,
-  writeSecureFile,
-  cleanup,
-} from "./security.js";
+import { WEBMCP_DIR, ensureSecureDir, writeSecureFile, cleanup } from "./security.js";
 
 const PORT_FILE = join(WEBMCP_DIR, "port");
 const TOKEN_FILE = join(WEBMCP_DIR, "token");

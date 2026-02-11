@@ -1,20 +1,29 @@
 {
   "name": "webmcp-bridge-monorepo",
   "private": true,
-  "workspaces": ["cli"],
+  "workspaces": [
+    "cli"
+  ],
   "scripts": {
     "dev": "bun run cli/src/index.ts",
     "build": "cd cli && bun run build",
     "test": "bun test",
     "test:watch": "bun test --watch",
-    "lint": "tsc --noEmit -p cli/tsconfig.json",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "typecheck": "tsgo --noEmit -p cli/tsconfig.json",
     "test:e2e": "bun run test/e2e.ts",
     "clean": "rm -rf cli/dist"
   },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",
     "@types/ws": "^8.18.1",
+    "@typescript/native-preview": "^7.0.0-dev.20260210.1",
     "bun-types": "latest",
+    "oxfmt": "^0.31.0",
+    "oxlint": "^1.46.0",
     "typescript": "^5.7"
   }
 }

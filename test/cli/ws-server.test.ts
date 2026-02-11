@@ -1,7 +1,11 @@
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { WebSocket } from "ws";
 import { createWsServer, type WsServer } from "../../cli/src/ws-server.js";
-import type { RegisterToolsMessage, ToolResultMessage, ExecuteToolMessage } from "../../cli/src/protocol.js";
+import type {
+  RegisterToolsMessage,
+  ToolResultMessage,
+  ExecuteToolMessage,
+} from "../../cli/src/protocol.js";
 
 let server: WsServer;
 
@@ -53,30 +57,26 @@ describe("WebSocket authentication", () => {
 
 describe("bootstrap endpoint", () => {
   test("returns token for chrome-extension origin", async () => {
-    const res = await fetch(
-      `http://127.0.0.1:${server.port}/.well-known/webmcp-bridge`,
-      { headers: { Origin: "chrome-extension://test-extension-id" } }
-    );
+    const res = await fetch(`http://127.0.0.1:${server.port}/.well-known/webmcp-bridge`, {
+      headers: { Origin: "chrome-extension://test-extension-id" },
+    });
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.token).toBe("test-token-123");
     expect(res.headers.get("access-control-allow-origin")).toBe(
-      "chrome-extension://test-extension-id"
+      "chrome-extension://test-extension-id",
     );
   });
 
   test("rejects non-extension origin", async () => {
-    const res = await fetch(
-      `http://127.0.0.1:${server.port}/.well-known/webmcp-bridge`,
-      { headers: { Origin: "https://evil.com" } }
-    );
+    const res = await fetch(`http://127.0.0.1:${server.port}/.well-known/webmcp-bridge`, {
+      headers: { Origin: "https://evil.com" },
+    });
     expect(res.status).toBe(403);
   });
 
   test("accepts request with no origin (service worker)", async () => {
-    const res = await fetch(
-      `http://127.0.0.1:${server.port}/.well-known/webmcp-bridge`
-    );
+    const res = await fetch(`http://127.0.0.1:${server.port}/.well-known/webmcp-bridge`);
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.token).toBe(server.token);
@@ -200,9 +200,7 @@ describe("tool execution", () => {
 
   test("rejects when no extension connected", async () => {
     expect(server.isExtensionConnected()).toBe(false);
-    await expect(server.executeTool("test", {})).rejects.toThrow(
-      "No extension connected"
-    );
+    await expect(server.executeTool("test", {})).rejects.toThrow("No extension connected");
   });
 
   test("times out after 30s", async () => {
@@ -255,7 +253,7 @@ describe("disconnect handling", () => {
       JSON.stringify({
         type: "register_tools",
         tools: [{ name: "t", description: "d", inputSchema: {} }],
-      })
+      }),
     );
     await new Promise((r) => setTimeout(r, 50));
     expect(lastTools).toHaveLength(1);
@@ -273,7 +271,7 @@ describe("disconnect handling", () => {
       JSON.stringify({
         type: "register_tools",
         tools: [{ name: "old_tool", description: "d", inputSchema: {} }],
-      })
+      }),
     );
     await new Promise((r) => setTimeout(r, 50));
 
@@ -283,7 +281,7 @@ describe("disconnect handling", () => {
       JSON.stringify({
         type: "register_tools",
         tools: [{ name: "new_tool", description: "d", inputSchema: {} }],
-      })
+      }),
     );
     await new Promise((r) => setTimeout(r, 50));
 

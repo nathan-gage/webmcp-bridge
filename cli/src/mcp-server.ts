@@ -6,12 +6,8 @@
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import {
-  ListToolsRequestSchema,
-  CallToolRequestSchema,
-} from "@modelcontextprotocol/sdk/types.js";
+import { ListToolsRequestSchema, CallToolRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import type { WsServer } from "./ws-server.js";
-import type { ToolSchema } from "./protocol.js";
 
 export interface McpBridgeServer {
   /** Start the MCP server on stdio */
@@ -25,7 +21,7 @@ export interface McpBridgeServer {
 export function createMcpServer(wsServer: WsServer): McpBridgeServer {
   const server = new Server(
     { name: "webmcp-bridge", version: "0.1.0" },
-    { capabilities: { tools: { listChanged: true } } }
+    { capabilities: { tools: { listChanged: true } } },
   );
 
   // --- tools/list handler ---
@@ -69,7 +65,7 @@ export function createMcpServer(wsServer: WsServer): McpBridgeServer {
                 tools: tools.map((t) => t.name),
               },
               null,
-              2
+              2,
             ),
           },
         ],

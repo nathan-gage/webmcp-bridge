@@ -47,7 +47,10 @@ function setupMocks() {
 function createContentMainLogic(nonce: string | undefined) {
   if (!nonce) return null;
 
-  const toolMap = new Map<string, { serialized: Record<string, unknown>; execute: (args: Record<string, unknown>) => unknown }>();
+  const toolMap = new Map<
+    string,
+    { serialized: Record<string, unknown>; execute: (args: Record<string, unknown>) => unknown }
+  >();
 
   function postToIsolated(type: string, payload: Record<string, unknown>) {
     postedMessages.push({
@@ -69,7 +72,14 @@ function createContentMainLogic(nonce: string | undefined) {
   // Message handler for execute-tool
   function handleMessage(event: {
     origin: string;
-    data?: { nonce?: string; source?: string; type?: string; callId?: string; toolName?: string; args?: Record<string, unknown> };
+    data?: {
+      nonce?: string;
+      source?: string;
+      type?: string;
+      callId?: string;
+      toolName?: string;
+      args?: Record<string, unknown>;
+    };
   }) {
     if (event.origin !== "http://localhost") return;
     if (!event.data || event.data.nonce !== nonce) return;
@@ -115,7 +125,11 @@ function createContentMainLogic(nonce: string | undefined) {
 
   mc.registerTool = (descriptor: ToolDescriptor) => {
     toolMap.set(descriptor.name, {
-      serialized: { name: descriptor.name, description: descriptor.description, inputSchema: descriptor.inputSchema },
+      serialized: {
+        name: descriptor.name,
+        description: descriptor.description,
+        inputSchema: descriptor.inputSchema,
+      },
       execute: descriptor.execute,
     });
     origRegister(descriptor);
@@ -133,7 +147,11 @@ function createContentMainLogic(nonce: string | undefined) {
     if (ctx && Array.isArray(ctx.tools)) {
       for (const tool of ctx.tools) {
         toolMap.set(tool.name, {
-          serialized: { name: tool.name, description: tool.description, inputSchema: tool.inputSchema },
+          serialized: {
+            name: tool.name,
+            description: tool.description,
+            inputSchema: tool.inputSchema,
+          },
           execute: tool.execute,
         });
       }
@@ -231,8 +249,18 @@ describe("content-main", () => {
 
     logic.mc.provideContext({
       tools: [
-        { name: "new-tool-1", description: "New 1", inputSchema: { type: "string" }, execute: () => "r1" },
-        { name: "new-tool-2", description: "New 2", inputSchema: { type: "number" }, execute: () => "r2" },
+        {
+          name: "new-tool-1",
+          description: "New 1",
+          inputSchema: { type: "string" },
+          execute: () => "r1",
+        },
+        {
+          name: "new-tool-2",
+          description: "New 2",
+          inputSchema: { type: "number" },
+          execute: () => "r2",
+        },
       ],
     });
 
@@ -249,8 +277,18 @@ describe("content-main", () => {
   test("clearContext removes all tools", () => {
     const logic = createContentMainLogic(NONCE)!;
 
-    logic.mc.registerTool({ name: "tool-1", description: "T1", inputSchema: {}, execute: () => {} });
-    logic.mc.registerTool({ name: "tool-2", description: "T2", inputSchema: {}, execute: () => {} });
+    logic.mc.registerTool({
+      name: "tool-1",
+      description: "T1",
+      inputSchema: {},
+      execute: () => {},
+    });
+    logic.mc.registerTool({
+      name: "tool-2",
+      description: "T2",
+      inputSchema: {},
+      execute: () => {},
+    });
     postedMessages.length = 0;
 
     logic.mc.clearContext();
