@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+  <head>
+    <title>loading</title>
+  </head>
+  <body>
+    <h1>WebMCP Redirect Test Page</h1>
+    <script>
+      if (navigator.modelContext) {
+        navigator.modelContext.registerTool({
+          name: "e2e_redirect",
+          description: "Navigates to a new page (simulates tool that triggers redirect)",
+          inputSchema: {
+            type: "object",
+            properties: { target: { type: "string" } },
+          },
+          execute: async (args) => {
+            // This triggers navigation — destroys the content script mid-call
+            window.location.href = args.target;
+            // This return will never reach the caller
+            return { redirected: true };
+          },
+        });
+        document.title = "ready";
+      } else {
+        document.title = "no-webmcp";
+      }
+    </script>
+  </body>
+</html>
