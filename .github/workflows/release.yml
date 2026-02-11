@@ -1,0 +1,93 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  id-token: write
+  contents: write
+
+jobs:
+  release:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # need full history to verify tag signature
+
+      # Fail if someone other than the repo owner pushed this tag
+      - name: Verify actor
+        run: |
+          if [ "${{ github.actor }}" != "nathan-gage" ]; then
+            echo "::error::Release triggered by unexpected actor: ${{ github.actor }}"
+            exit 1
+          fi
+
+      # Fail if the tagged commit is not signed with a verified signature
+      - name: Verify tag signature
+        run: |
+          TAG="${{ github.ref_name }}"
+          # Check if the tag itself is signed (annotated + signed tag)
+          if git tag -v "$TAG" 2>/dev/null; then
+            echo "Tag $TAG has a verified signature"
+          else
+            # Fall back to checking if the tagged commit is signed
+            COMMIT=$(git rev-list -1 "$TAG")
+            VERIFIED=$(git log --format='%G?' -1 "$COMMIT")
+            if [ "$VERIFIED" != "G" ] && [ "$VERIFIED" != "U" ]; then
+              echo "::error::Tagged commit $COMMIT is not signed (status: $VERIFIED)"
+              exit 1
+            fi
+            echo "Tagged commit $COMMIT has a verified signature"
+          fi
+
+      - uses: oven-sh/setup-bun@v2
+
+      - run: bun install --frozen-lockfile
+
+      # Re-run full CI — don't trust that it passed on main
+      - run: bun run format:check
+      - run: bun run lint
+      - run: bun run typecheck
+      - run: bun run test
+
+      - run: bun run build
+
+      # Verify tag matches package.json version
+      - name: Verify tag matches package version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/v}"
+          PKG=$(node -p "require('./cli/package.json').version")
+          if [ "$TAG" != "$PKG" ]; then
+            echo "::error::Tag v$TAG does not match package.json version $PKG"
+            exit 1
+          fi
+
+      # Audit tarball — fail if unexpected files appear
+      - name: Audit tarball contents
+        working-directory: cli
+        run: |
+          FILES=$(npm pack --dry-run 2>&1)
+          echo "$FILES"
+          echo "$FILES" | grep -qE '\.env|\.ts$|\.map$|test/' && {
+            echo "::error::Unexpected files found in tarball"
+            exit 1
+          } || true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Publish with provenance
+        working-directory: cli
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub Release
+        run: gh release create "${{ github.ref_name }}" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}

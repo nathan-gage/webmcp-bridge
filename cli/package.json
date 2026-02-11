@@ -2,9 +2,18 @@
   "name": "webmcp-bridge",
   "version": "0.1.1",
   "description": "Bridge WebMCP browser tools to MCP clients",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nathan-gage/webmcp-bridge.git",
+    "directory": "cli"
+  },
   "bin": {
     "webmcp-bridge": "./dist/index.js"
   },
+  "files": [
+    "dist/index.js"
+  ],
   "main": "./dist/index.js",
   "scripts": {
     "build": "bun build src/index.ts --outdir dist --target node",
