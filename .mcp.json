@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "webmcp-bridge": {
+      "type": "stdio",
+      "command": "bun",
+      "args": ["run", "cli/src/index.ts"],
+      "env": {}
+    }
+  }
+}

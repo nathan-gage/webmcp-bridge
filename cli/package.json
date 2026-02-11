@@ -1,0 +1,17 @@
+{
+  "name": "webmcp-bridge",
+  "version": "0.1.0",
+  "description": "Bridge WebMCP browser tools to MCP clients",
+  "bin": {
+    "webmcp-bridge": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target node",
+    "start": "bun run src/index.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12",
+    "ws": "^8.18"
+  }
+}
