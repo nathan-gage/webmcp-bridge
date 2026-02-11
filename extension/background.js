@@ -463,6 +463,7 @@ chrome.runtime.onMessage.addListener((message, sender) => {
     existing.url = sender.tab.url;
     existing.title = sender.tab.title;
     existing.tools = message.tools || [];
+    existing.isNative = message.isNative ?? true;
     tabs.set(tabId, existing);
 
     saveCachedTabs();
@@ -520,7 +521,13 @@ chrome.runtime.onConnect.addListener((port) => {
       if (msg.type === "get-status") {
         const tabEntries = [];
         for (const [tabId, tab] of tabs) {
-          tabEntries.push({ tabId, url: tab.url, title: tab.title, tools: tab.tools });
+          tabEntries.push({
+            tabId,
+            url: tab.url,
+            title: tab.title,
+            tools: tab.tools,
+            isNative: tab.isNative,
+          });
         }
         port.postMessage({
           type: "status",
