@@ -1,12 +1,26 @@
-# WebMCP Bridge
-
 Use tools from any website in any MCP client.
 
-Bridges `navigator.modelContext` (Chrome 146+) to MCP over stdio. A CLI speaks MCP to your client; a Chrome extension intercepts WebMCP tool registrations and forwards them over a localhost WebSocket.
+`webmcp-bridge` is a CLI and Chrome extension that bridge `navigator.modelContext` (Chrome 146+) to MCP over stdio. The extension intercepts WebMCP tool registrations from open tabs and forwards them over a localhost WebSocket to the CLI, which exposes them as standard MCP tools.
 
+```mermaid
+graph LR
+    A[MCP Client] -->|stdio| B[CLI] -->|websocket| C[Extension] -->|navigator.modelContext| D[Website]
 ```
-MCP Client ──stdio──▶ CLI ──ws──▶ Extension ──▶ navigator.modelContext ──▶ Website
-```
+
+## Why WebMCP?
+
+Websites already orchestrate APIs, manage auth, and handle complex workflows. A traditional MCP server rebuilds all of that from scratch. WebMCP skips it — the website registers tools client-side via `navigator.modelContext`, and agents call them through the browser. The tools run through the same code paths as the UI, authenticated by whatever the user already has.
+
+|  | Traditional MCP | WebMCP |
+|---|---|---|
+| Server | build and host | the website |
+| Auth | API keys, token refresh | browser sessions |
+| Business logic | reimplement | already in the UI |
+| Maintenance | track API changes | website handles it |
+
+### What this extension adds
+
+WebMCP alone only talks to the browser's built-in agent. This extension bridges it to the MCP ecosystem — Claude, Cursor, Windsurf, any MCP client can call tools from any open tab.
 
 ## Quick Start
 
