@@ -96,6 +96,24 @@ h2 {
   margin-top: 2px;
 }
 
+.api-mode {
+  font-size: 11px;
+  text-align: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.api-mode.native {
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.api-mode.polyfill {
+  background: #fefce8;
+  color: #854d0e;
+}
+
 .empty {
   text-align: center;
   color: #999;
@@ -149,6 +167,15 @@ h2 {
   }
   .empty {
     color: #666;
+  }
+
+  .api-mode.native {
+    background: #052e16;
+    color: #4ade80;
+  }
+  .api-mode.polyfill {
+    background: #422006;
+    color: #fbbf24;
   }
 
   .footer {

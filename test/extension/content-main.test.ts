@@ -44,8 +44,10 @@ function setupMocks() {
  * Simulates what content-main.js does without needing to eval the script.
  * Faithful reproduction of the IIFE logic for testing.
  */
-function createContentMainLogic(nonce: string | undefined) {
+function createContentMainLogic(nonce: string | undefined, opts?: { isNative?: boolean }) {
   if (!nonce) return null;
+
+  const isNative = opts?.isNative ?? true;
 
   const toolMap = new Map<
     string,
@@ -66,7 +68,7 @@ function createContentMainLogic(nonce: string | undefined) {
     for (const [, entry] of toolMap) {
       tools.push(entry.serialized);
     }
-    postToIsolated("tools-changed", { tools });
+    postToIsolated("tools-changed", { tools, isNative });
   }
 
   // Message handler for execute-tool
@@ -166,7 +168,7 @@ function createContentMainLogic(nonce: string | undefined) {
     broadcastToolsChanged();
   };
 
-  return { toolMap, handleMessage, mc };
+  return { toolMap, handleMessage, mc, isNative };
 }
 
 describe("content-main", () => {
@@ -460,6 +462,19 @@ describe("content-main", () => {
     expect(postedMessages.length).toBe(0);
   });
 
+  test("tools-changed messages include isNative true by default", () => {
+    const logic = createContentMainLogic(NONCE)!;
+
+    logic.mc.registerTool({
+      name: "tool-1",
+      description: "T1",
+      inputSchema: {},
+      execute: () => {},
+    });
+
+    expect(postedMessages[0].isNative).toBe(true);
+  });
+
   test("execute-tool handles async execute functions", async () => {
     const logic = createContentMainLogic(NONCE)!;
 
@@ -505,5 +520,118 @@ describe("content-main", () => {
     const lastMsg = postedMessages[postedMessages.length - 1];
     expect(lastMsg.type).toBe("tools-changed");
     expect((lastMsg.tools as unknown[]).length).toBe(3);
+  });
+});
+
+describe("polyfill", () => {
+  beforeEach(() => {
+    setupMocks();
+  });
+
+  test("when native ModelContext exists, isNative is true", () => {
+    const logic = createContentMainLogic(NONCE, { isNative: true })!;
+    expect(logic.isNative).toBe(true);
+
+    logic.mc.registerTool({
+      name: "native-tool",
+      description: "Native",
+      inputSchema: {},
+      execute: () => {},
+    });
+
+    expect(postedMessages[0].isNative).toBe(true);
+  });
+
+  test("when polyfilled, isNative is false", () => {
+    const logic = createContentMainLogic(NONCE, { isNative: false })!;
+    expect(logic.isNative).toBe(false);
+
+    logic.mc.registerTool({
+      name: "polyfill-tool",
+      description: "Polyfilled",
+      inputSchema: {},
+      execute: () => {},
+    });
+
+    expect(postedMessages[0].isNative).toBe(false);
+  });
+
+  test("polyfill prototype is wrappable — all 4 methods exist", () => {
+    // Simulate what the polyfill creates
+    class ModelContextPolyfill {
+      registerTool() {}
+      unregisterTool() {}
+      provideContext() {}
+      clearContext() {}
+    }
+
+    const proto = ModelContextPolyfill.prototype;
+    expect(typeof proto.registerTool).toBe("function");
+    expect(typeof proto.unregisterTool).toBe("function");
+    expect(typeof proto.provideContext).toBe("function");
+    expect(typeof proto.clearContext).toBe("function");
+  });
+
+  test("tools-changed messages include correct isNative value for polyfilled API", () => {
+    const logic = createContentMainLogic(NONCE, { isNative: false })!;
+
+    logic.mc.registerTool({
+      name: "tool-a",
+      description: "A",
+      inputSchema: {},
+      execute: () => {},
+    });
+
+    logic.mc.registerTool({
+      name: "tool-b",
+      description: "B",
+      inputSchema: {},
+      execute: () => {},
+    });
+
+    // Every tools-changed message should have isNative: false
+    const toolsChangedMsgs = postedMessages.filter((m) => m.type === "tools-changed");
+    expect(toolsChangedMsgs.length).toBe(2);
+    for (const msg of toolsChangedMsgs) {
+      expect(msg.isNative).toBe(false);
+    }
+  });
+
+  test("full tool registration round-trip works with polyfilled API", () => {
+    const executeFn = mock((args: Record<string, unknown>) => ({
+      sum: (args.a as number) + (args.b as number),
+    }));
+    const logic = createContentMainLogic(NONCE, { isNative: false })!;
+
+    // Register a tool
+    logic.mc.registerTool({
+      name: "add",
+      description: "Adds two numbers",
+      inputSchema: { type: "object", properties: { a: { type: "number" }, b: { type: "number" } } },
+      execute: executeFn,
+    });
+
+    expect(logic.toolMap.has("add")).toBe(true);
+    expect(postedMessages[0].type).toBe("tools-changed");
+    expect(postedMessages[0].isNative).toBe(false);
+
+    // Execute the tool
+    postedMessages.length = 0;
+    logic.handleMessage({
+      origin: "http://localhost",
+      data: {
+        nonce: NONCE,
+        source: "webmcp-isolated",
+        type: "execute-tool",
+        callId: "polyfill-call-1",
+        toolName: "add",
+        args: { a: 3, b: 7 },
+      },
+    });
+
+    expect(executeFn).toHaveBeenCalledWith({ a: 3, b: 7 });
+    expect(postedMessages[0].type).toBe("tool-result");
+    expect(postedMessages[0].callId).toBe("polyfill-call-1");
+    expect(postedMessages[0].result).toEqual({ sum: 10 });
   });
 });

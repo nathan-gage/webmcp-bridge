@@ -22,6 +22,17 @@ port.onMessage.addListener((msg) => {
   tabsList.innerHTML = "";
   const activeTabs = (msg.tabs || []).filter((t) => t.tools.length > 0);
 
+  const apiModeEl = document.getElementById("api-mode");
+  const allTabs = msg.tabs || [];
+  if (allTabs.length > 0) {
+    const isNative = allTabs.some((t) => t.isNative !== false);
+    apiModeEl.textContent = isNative ? "Native WebMCP" : "Polyfilled WebMCP";
+    apiModeEl.className = isNative ? "api-mode native" : "api-mode polyfill";
+    apiModeEl.hidden = false;
+  } else {
+    apiModeEl.hidden = true;
+  }
+
   if (activeTabs.length > 0) {
     tabsSection.hidden = false;
     emptyEl.hidden = true;

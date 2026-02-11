@@ -20,7 +20,28 @@
     for (const [name, entry] of toolMap) {
       tools.push(entry.serialized);
     }
-    postToIsolated("tools-changed", { tools });
+    postToIsolated("tools-changed", { tools, isNative });
+  }
+
+  // --- WebMCP Polyfill (Chrome < 146) ---
+  let isNative = true;
+  if (typeof ModelContext === "undefined" && !navigator.modelContext) {
+    isNative = false;
+
+    class ModelContextPolyfill {
+      registerTool() {}
+      unregisterTool() {}
+      provideContext() {}
+      clearContext() {}
+    }
+
+    window.ModelContext = ModelContextPolyfill;
+    Object.defineProperty(navigator, "modelContext", {
+      value: new ModelContextPolyfill(),
+      writable: false,
+      enumerable: true,
+      configurable: false,
+    });
   }
 
   // Listen for execute-tool requests from the isolated world
@@ -30,9 +51,7 @@
     if (event.data.source !== "webmcp-isolated") return;
 
     if (event.data.type === "re-poll-tools") {
-      if (toolMap.size > 0) {
-        broadcastToolsChanged();
-      }
+      broadcastToolsChanged();
       return;
     }
 
@@ -122,4 +141,7 @@
     broadcastToolsChanged();
     return result;
   };
+
+  // Broadcast immediately so background learns isNative even before any tools register
+  broadcastToolsChanged();
 })();
