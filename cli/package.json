@@ -1,6 +1,6 @@
 {
   "name": "webmcp-bridge",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Bridge WebMCP browser tools to MCP clients",
   "license": "MIT",
   "repository": {
@@ -12,10 +12,12 @@
     "webmcp-bridge": "dist/index.js"
   },
   "files": [
-    "dist/index.js"
+    "dist/index.js",
+    "README.md"
   ],
   "main": "./dist/index.js",
   "scripts": {
+    "prepublishOnly": "cp ../README.md ./README.md",
     "build": "bun build src/index.ts --outdir dist --target node",
     "start": "bun run src/index.ts"
   },
