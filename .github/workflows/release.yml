@@ -77,6 +77,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+
+      # actions/setup-node writes a default token to .npmrc when registry-url
+      # is set, which preempts npm's native OIDC exchange for trusted publishing
+      - name: Clear default auth token
+        run: npm config delete //registry.npmjs.org/:_authToken
 
       - name: Publish with provenance
         working-directory: cli
