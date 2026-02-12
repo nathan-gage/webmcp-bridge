@@ -25,6 +25,9 @@ Thumbs.db
 port
 token
 
+# Copied into cli/ at publish time
+cli/README.md
+
 # Chrome for Testing (downloaded by test:e2e:install)
 .chrome-for-testing/
 
