@@ -79,10 +79,11 @@ jobs:
           node-version: "22"
           registry-url: "https://registry.npmjs.org"
 
-      # actions/setup-node writes a default token to .npmrc when registry-url
-      # is set, which preempts npm's native OIDC exchange for trusted publishing
-      - name: Clear default auth token
-        run: npm config delete //registry.npmjs.org/:_authToken
+      # OIDC trusted publishing requires npm >=11.5.1 (Node 22 bundles an older version)
+      # and NODE_AUTH_TOKEN must NOT be set — setup-node writes a default token to .npmrc
+      # when registry-url is provided, so we upgrade npm (which resets .npmrc) and publish
+      # without any auth token so npm falls through to OIDC exchange
+      - run: npm install -g npm@latest
 
       - name: Publish with provenance
         working-directory: cli
