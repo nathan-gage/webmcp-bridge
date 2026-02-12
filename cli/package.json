@@ -5,11 +5,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nathan-gage/webmcp-bridge.git",
+    "url": "git+https://github.com/nathan-gage/webmcp-bridge.git",
     "directory": "cli"
   },
   "bin": {
-    "webmcp-bridge": "./dist/index.js"
+    "webmcp-bridge": "dist/index.js"
   },
   "files": [
     "dist/index.js"
